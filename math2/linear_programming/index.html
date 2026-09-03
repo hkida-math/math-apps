@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>線形計画法 シミュレーター</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .container {
+            display: flex;
+            flex-wrap: nowrap; /* PC向けに横並びを維持 */
+            gap: 40px;
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            max-width: 1200px;
+            width: 100%;
+            box-sizing: border-box;
+            align-items: flex-start;
+            justify-content: center;
+        }
+        /* 画面が小さい場合（タブレット縦・スマホ）は縦並びにフォールバック */
+        @media (max-width: 900px) {
+            .container {
+                flex-wrap: wrap;
+            }
+        }
+        .left-panel {
+            flex-shrink: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #fafafa;
+            cursor: crosshair;
+            touch-action: none;
+            display: block;
+        }
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex-grow: 1;
+            min-width: 300px;
+        }
+        .card {
+            background: #f8f9fa;
+            border-left: 5px solid #3498db;
+            padding: 20px;
+            border-radius: 6px;
+        }
+        .equation {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin: 5px 0;
+        }
+        .value-display {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: #e74c3c;
+            text-align: center;
+            margin: 15px 0;
+        }
+        .gauge-container {
+            width: 100%;
+            height: 28px;
+            background: #e0e0e0;
+            border-radius: 14px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .gauge-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f1c40f, #e74c3c);
+            width: 0%;
+            transition: width 0.1s ease-out;
+        }
+        .legend {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+        }
+        .color-box {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+        .secret-checkbox {
+            margin-top: 10px;
+            padding: 15px;
+            background: #fff3f3;
+            border: 2px dashed #e74c3c;
+            border-radius: 8px;
+            font-weight: bold;
+            color: #c0392b;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            user-select: none;
+        }
+        .secret-checkbox input[type="checkbox"] {
+            transform: scale(1.5);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>線形計画法 シミュレーター</h1>
+    
+    <div class="container">
+        <div class="left-panel">
+            <canvas id="graphCanvas" width="550" height="550"></canvas>
+        </div>
+
+        <div class="right-panel">
+            <div class="card">
+                <h3>制約条件</h3>
+                <div class="legend">
+                    <div class="color-box" style="background: rgba(46, 204, 113, 0.4); border: 1px solid #27ae60;"></div>
+                    <span>実行可能領域</span>
+                </div>
+                <div class="equation">x ≥ 0, y ≥ 0</div>
+                <div class="legend" style="margin-top: 15px;">
+                    <div class="color-box" style="background: #3498db;"></div>
+                    <span class="equation">10x + 30y ≤ 300</span>
+                </div>
+                <div class="legend">
+                    <div class="color-box" style="background: #e67e22;"></div>
+                    <span class="equation">20x + 20y ≤ 400</span>
+                </div>
+            </div>
+
+            <div class="card" style="border-left-color: #e74c3c;">
+                <p style="font-size: 1.1rem; font-weight: bold; margin-top: 0;">x + 2y の値は</p>
+                <div class="value-display" id="z-value">0.0</div>
+                
+                <p style="font-size: 0.9rem; margin-bottom: 5px;">ゲージ</p>
+                <div class="gauge-container">
+                    <div class="gauge-fill" id="z-gauge"></div>
+                </div>
+
+                <div style="margin-top: 25px; font-size: 1.1rem;">
+                    現在の座標: 
+                    <span class="equation">(<span id="x-value">0.0</span>, <span id="y-value">0.0</span>)</span>
+                </div>
+            </div>
+
+            <label class="secret-checkbox">
+                <input type="checkbox" id="show-line-checkbox">
+                押すな
+            </label>
+            
+            <p style="font-size: 0.95rem; color: #555; line-height: 1.5;">
+                <strong>操作方法:</strong><br>
+                緑色の領域内をタップ（クリック）して点を配置します。<br>
+                点をドラッグして動かすと、値がどのように変化するか観察できます。
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('graphCanvas');
+        const ctx = canvas.getContext('2d');
+        const zValueEl = document.getElementById('z-value');
+        const zGaugeEl = document.getElementById('z-gauge');
+        const xValueEl = document.getElementById('x-value');
+        const yValueEl = document.getElementById('y-value');
+        const checkboxEl = document.getElementById('show-line-checkbox');
+
+        // ビューポート（論理座標の範囲）
+        const X_MIN = -5, X_MAX = 30;
+        const Y_MIN = -5, Y_MAX = 25;
+        const W = canvas.width;
+        const H = canvas.height;
+
+        // 状態
+        let currentPoint = null; 
+        let isDragging = false;
+
+        // 座標変換関数
+        function toPx(logicalX) { return ((logicalX - X_MIN) / (X_MAX - X_MIN)) * W; }
+        function toPy(logicalY) { return H - ((logicalY - Y_MIN) / (Y_MAX - Y_MIN)) * H; }
+        function toLx(px) { return X_MIN + (px / W) * (X_MAX - X_MIN); }
+        function toLy(py) { return Y_MIN + ((H - py) / H) * (Y_MAX - Y_MIN); }
+
+        // 新しい制約条件：10x+30y<=300, 20x+20y<=400
+        function isInside(x, y) {
+            return x >= 0 && y >= 0 && (10*x + 30*y <= 300.001) && (20*x + 20*y <= 400.001);
+        }
+
+        function closestPointOnSegment(p, a, b) {
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            if (dx === 0 && dy === 0) return { x: a.x, y: a.y };
+            
+            let t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy);
+            t = Math.max(0, Math.min(1, t)); 
+            return { x: a.x + t * dx, y: a.y + t * dy };
+        }
+
+        function clampToRegion(x, y) {
+            if (isInside(x, y)) return {x, y};
+            
+            // 今回の制約条件で形成される多角形の頂点
+            // (0,0), (20,0), (15,5), (0,10)
+            const vertices = [
+                {x: 0, y: 0},
+                {x: 20, y: 0},
+                {x: 15, y: 5},
+                {x: 0, y: 10}
+            ];
+            
+            let closest = null;
+            let minDist = Infinity;
+            
+            for (let i = 0; i < vertices.length; i++) {
+                const a = vertices[i];
+                const b = vertices[(i + 1) % vertices.length];
+                const pt = closestPointOnSegment({x, y}, a, b);
+                const dist = Math.hypot(x - pt.x, y - pt.y);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closest = pt;
+                }
+            }
+            return closest || {x:0, y:0};
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+
+            // グリッド線
+            ctx.strokeStyle = '#eee';
+            ctx.lineWidth = 1;
+            for(let i = Math.ceil(X_MIN); i <= Math.floor(X_MAX); i++) {
+                if (i % 5 === 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(toPx(i), 0); ctx.lineTo(toPx(i), H);
+                    ctx.stroke();
+                }
+            }
+            for(let i = Math.ceil(Y_MIN); i <= Math.floor(Y_MAX); i++) {
+                if (i % 5 === 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, toPy(i)); ctx.lineTo(W, toPy(i));
+                    ctx.stroke();
+                }
+            }
+
+            // X軸, Y軸
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(0, toPy(0)); ctx.lineTo(W, toPy(0)); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(toPx(0), 0); ctx.lineTo(toPx(0), H); ctx.stroke();
+
+            // 実行可能領域の塗りつぶし
+            ctx.fillStyle = 'rgba(46, 204, 113, 0.3)';
+            ctx.beginPath();
+            ctx.moveTo(toPx(0), toPy(0));
+            ctx.lineTo(toPx(20), toPy(0));
+            ctx.lineTo(toPx(15), toPy(5));
+            ctx.lineTo(toPx(0), toPy(10));
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#27ae60';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 制約ライン1: 10x + 30y = 300 (青) -> y = 10 - x/3
+            ctx.strokeStyle = '#3498db';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(toPx(X_MIN), toPy(10 - X_MIN/3));
+            ctx.lineTo(toPx(X_MAX), toPy(10 - X_MAX/3));
+            ctx.stroke();
+
+            // 制約ライン2: 20x + 20y = 400 (オレンジ) -> y = 20 - x
+            ctx.strokeStyle = '#e67e22';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(toPx(X_MIN), toPy(20 - X_MIN));
+            ctx.lineTo(toPx(X_MAX), toPy(20 - X_MAX));
+            ctx.stroke();
+
+            // 点と破線の描画
+            if (currentPoint) {
+                const z = currentPoint.x + 2 * currentPoint.y;
+                
+                // 「押すな」チェックボックスがONの時だけ破線を描画
+                if (checkboxEl.checked) {
+                    // x + 2y = z => y = -0.5x + z/2
+                    ctx.strokeStyle = '#9b59b6';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([6, 6]);
+                    ctx.beginPath();
+                    ctx.moveTo(toPx(X_MIN), toPy(-0.5 * X_MIN + z / 2));
+                    ctx.lineTo(toPx(X_MAX), toPy(-0.5 * X_MAX + z / 2));
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                // 点の描画
+                ctx.fillStyle = '#e74c3c';
+                ctx.beginPath();
+                ctx.arc(toPx(currentPoint.x), toPy(currentPoint.y), 7, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+            }
+        }
+
+        function updateUI() {
+            if (!currentPoint) return;
+            const x = currentPoint.x;
+            const y = currentPoint.y;
+            const z = x + 2 * y;
+
+            xValueEl.textContent = x.toFixed(1);
+            yValueEl.textContent = y.toFixed(1);
+            zValueEl.textContent = z.toFixed(1);
+
+            // 今回の最大値は (15, 5) のときの 25
+            const maxZ = 25;
+            const percentage = Math.min(100, Math.max(0, (z / maxZ) * 100));
+            zGaugeEl.style.width = percentage + '%';
+        }
+
+        function handlePointerDown(e) {
+            canvas.setPointerCapture(e.pointerId);
+            const rect = canvas.getBoundingClientRect();
+            const px = e.clientX - rect.left;
+            const py = e.clientY - rect.top;
+            
+            currentPoint = clampToRegion(toLx(px), toLy(py));
+            isDragging = true;
+            
+            draw();
+            updateUI();
+        }
+
+        function handlePointerMove(e) {
+            if (!isDragging) return;
+            const rect = canvas.getBoundingClientRect();
+            const px = e.clientX - rect.left;
+            const py = e.clientY - rect.top;
+            
+            currentPoint = clampToRegion(toLx(px), toLy(py));
+            draw();
+            updateUI();
+        }
+
+        function handlePointerUp(e) {
+            isDragging = false;
+        }
+
+        canvas.addEventListener('pointerdown', handlePointerDown);
+        canvas.addEventListener('pointermove', handlePointerMove);
+        canvas.addEventListener('pointerup', handlePointerUp);
+        canvas.addEventListener('pointercancel', handlePointerUp);
+
+        // チェックボックスの状態が変わった時に再描画
+        checkboxEl.addEventListener('change', draw);
+
+        // 初期描画
+        draw();
+    </script>
+</body>
+</html>
