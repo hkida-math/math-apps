@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>あみだくじの確率</title>
+<style>
+  :root{
+    --blue:#1644b8; --accent:#1769ff; --text:#10223b; --muted:#526071;
+    --card:#fff; --bg:#f7f9fc; --line:#d9dee7; --red:#ff2b2b;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    line-height:1.65;
+  }
+  .wrap{max-width:1050px;margin:0 auto;padding:12px 20px 56px}
+  header{text-align:center;padding:0 0 14px}
+  h1{color:var(--blue);font-size:30px;margin:0 0 14px}
+  header p{margin:0 auto;max-width:760px;font-size:15px}
+  .card{
+    background:var(--card); border:1px solid #e5e9f0; border-radius:12px;
+    padding:24px; margin:18px 0; box-shadow:0 1px 2px rgba(0,0,0,.03);
+  }
+  h2{font-size:20px;margin:0 0 14px}
+  .field{margin:14px 0}
+  label{display:block;font-weight:700;margin-bottom:6px}
+  input[type=number]{
+    width:100%; border:1px solid #cbd3df; border-radius:6px;
+    padding:10px 12px; font-size:16px; background:#fff;
+  }
+  .check{display:flex;align-items:center;gap:8px;font-weight:400}
+  .check input{width:17px;height:17px}
+  .actions{text-align:center;margin-top:22px}
+  button{
+    border:0;border-radius:9px;background:var(--accent);color:white;
+    font-size:16px;font-weight:700;padding:12px 30px;cursor:pointer;
+  }
+  button:disabled{opacity:.55;cursor:wait}
+  .note{font-size:14px;color:var(--muted);margin:0 0 12px}
+  .panel{
+    max-width:850px;margin:0 auto;border:1px solid #ccd3df;border-radius:8px;
+    background:white;box-shadow:0 1px 2px rgba(0,0,0,.08);overflow:hidden;
+  }
+  #ladder{display:block;width:100%;height:auto;min-height:430px}
+  #chartWrap{max-width:850px;margin:0 auto;border:1px solid #ccd3df;border-radius:8px;background:#fff;padding:10px}
+  canvas{display:block;width:100%;height:auto}
+  .status{font-size:14px;text-align:center;margin:10px 0 0;color:#334}
+  .error{color:#b00020;font-weight:700;min-height:1.5em;margin-top:8px}
+  .small{font-size:13px;color:#5f6b7a}
+  @media (max-width:650px){
+    .wrap{padding:10px 12px 36px}
+    .card{padding:18px 14px}
+    h1{font-size:25px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>あみだくじの確率</h1>
+    <p>ランダムなあみだくじパターンを生成し、当選位置から上向きに辿って、どの出発位置が当たりやすいかを調べるシミュレーターです。</p>
+  </header>
+
+  <section class="card">
+    <h2>シミュレーション設定</h2>
+    <div class="field">
+      <label for="n">縦線の本数:</label>
+      <input id="n" type="number" min="2" max="20" step="1" value="5">
+    </div>
+    <div class="field">
+      <label for="target">当選位置（1 = 左端）:</label>
+      <input id="target" type="number" min="1" max="5" step="1" value="3">
+    </div>
+    <div class="field">
+      <label for="bars">横線の本数:</label>
+      <input id="bars" type="number" min="0" max="300" step="1" value="10">
+    </div>
+    <div class="field">
+      <label for="trials">試行回数:</label>
+      <input id="trials" type="number" min="1" max="200000" step="1" value="1000">
+    </div>
+    <div class="field">
+      <label>均等確率ベースライン:</label>
+      <label class="check"><input id="baseline" type="checkbox" checked> グラフに表示する</label>
+    </div>
+    <div class="actions"><button id="run">シミュレーション開始</button></div>
+    <div id="error" class="error"></div>
+  </section>
+
+  <section class="card" id="exampleSection">
+    <h2>生成されたあみだくじの例</h2>
+    <p class="note">赤いパスは下から上へ辿った当選位置へのルートを示します。○印の出発位置が当選位置に導きます。</p>
+    <div class="panel">
+      <svg id="ladder" viewBox="0 0 850 620" role="img" aria-label="最後に生成されたあみだくじ"></svg>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>確率分布</h2>
+    <p class="note">各出発位置の当たる確率。赤い点線は理論的な均等確率ベースラインを表します。</p>
+    <div id="chartWrap"><canvas id="chart" width="850" height="520"></canvas></div>
+    <div id="status" class="status"></div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const nEl=$('n'), targetEl=$('target'), barsEl=$('bars'), trialsEl=$('trials');
+  const baseEl=$('baseline'), runBtn=$('run'), errorEl=$('error');
+  const svg=$('ladder'), canvas=$('chart'), statusEl=$('status');
+
+  nEl.addEventListener('input', () => {
+    const n = Math.max(2, Math.min(20, Number(nEl.value)||2));
+    targetEl.max = n;
+    if (Number(targetEl.value) > n) targetEl.value = n;
+  });
+  baseEl.addEventListener('change', () => { if (window.lastResult) drawChart(window.lastResult); });
+
+  function validate(){
+    const n=Number(nEl.value), target=Number(targetEl.value), bars=Number(barsEl.value), trials=Number(trialsEl.value);
+    if(!Number.isInteger(n)||n<2||n>20) return '縦線の本数は 2〜20 の整数にしてください。';
+    if(!Number.isInteger(target)||target<1||target>n) return `当選位置は 1〜${n} の整数にしてください。`;
+    if(!Number.isInteger(bars)||bars<0||bars>300) return '横線の本数は 0〜300 の整数にしてください。';
+    if(!Number.isInteger(trials)||trials<1||trials>200000) return '試行回数は 1〜200000 の整数にしてください。';
+    return null;
+  }
+
+  // 横線は、隣り合う2本の縦線を結ぶ。高さは連続値でランダムに選び、
+  // 見た目で重ならないように最小間隔を設ける。
+  function generateLadder(n, barCount){
+    if(barCount===0) return [];
+    const minY=0.08, maxY=0.92;
+    const levels=[];
+    // 多数の横線でも必ず指定本数を生成できるよう、層を細かく分けて各層内で乱数化。
+    for(let k=0;k<barCount;k++){
+      const jitter=(Math.random()-0.5)*0.65;
+      const y=minY+(maxY-minY)*((k+0.5+jitter)/barCount);
+      levels.push(Math.max(minY,Math.min(maxY,y)));
+    }
+    // 高さと接続位置の双方をランダム化
+    for(let i=levels.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1)); [levels[i],levels[j]]=[levels[j],levels[i]];
+    }
+    const bars=levels.map(y=>({y, left:Math.floor(Math.random()*(n-1))}));
+    bars.sort((a,b)=>a.y-b.y); // 上→下
+    return bars;
+  }
+
+  function winningStartFromBottom(n, target0, bars){
+    let col=target0;
+    for(let k=bars.length-1;k>=0;k--){
+      const b=bars[k];
+      if(col===b.left) col=b.left+1;
+      else if(col===b.left+1) col=b.left;
+    }
+    return col;
+  }
+
+  function runSimulation(){
+    const err=validate(); errorEl.textContent=err||''; if(err) return;
+    runBtn.disabled=true; runBtn.textContent='計算中…';
+    setTimeout(()=>{
+      const n=Number(nEl.value), target=Number(targetEl.value)-1, barCount=Number(barsEl.value), trials=Number(trialsEl.value);
+      const counts=Array(n).fill(0);
+      let lastBars=[];
+      for(let t=0;t<trials;t++){
+        const ladder=generateLadder(n,barCount);
+        const win=winningStartFromBottom(n,target,ladder);
+        counts[win]++;
+        lastBars=ladder;
+      }
+      const result={n,target,barCount,trials,counts,lastBars};
+      window.lastResult=result;
+      drawLadder(result);
+      drawChart(result);
+      runBtn.disabled=false; runBtn.textContent='シミュレーション開始';
+    },20);
+  }
+
+  function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+  function drawLadder(r){
+    const {n,target,barCount,lastBars}=r;
+    const W=850,H=620;
+    const left=70,right=780,top=70,bottom=470;
+    const xs=Array.from({length:n},(_,i)=>left+(right-left)*(n===1?0:i/(n-1)));
+    const win=winningStartFromBottom(n,target,lastBars);
+    let parts=[];
+    parts.push(`<rect x="0" y="0" width="${W}" height="${H}" fill="white"/>`);
+    parts.push(`<text x="${W/2}" y="28" text-anchor="middle" font-size="21" font-weight="700">最後のあみだくじの例</text>`);
+    for(let i=0;i<n;i++){
+      parts.push(`<text x="${xs[i]}" y="48" text-anchor="middle" font-size="16" font-weight="700">${i+1}</text>`);
+      parts.push(`<line x1="${xs[i]}" y1="${top}" x2="${xs[i]}" y2="${bottom}" stroke="#444" stroke-width="3"/>`);
+      parts.push(`<text x="${xs[i]}" y="${bottom+30}" text-anchor="middle" font-size="14">${i+1}</text>`);
+    }
+    for(const b of lastBars){
+      const y=top+(bottom-top)*b.y;
+      parts.push(`<line x1="${xs[b.left]}" y1="${y}" x2="${xs[b.left+1]}" y2="${y}" stroke="#666" stroke-width="4"/>`);
+    }
+
+    // 下から上への当選ルート
+    let current=target;
+    let d=`M ${xs[current]} ${bottom}`;
+    for(let k=lastBars.length-1;k>=0;k--){
+      const b=lastBars[k], y=top+(bottom-top)*b.y;
+      d+=` L ${xs[current]} ${y}`;
+      if(current===b.left){ current=b.left+1; d+=` L ${xs[current]} ${y}`; }
+      else if(current===b.left+1){ current=b.left; d+=` L ${xs[current]} ${y}`; }
+    }
+    d+=` L ${xs[current]} ${top}`;
+    parts.push(`<path d="${d}" fill="none" stroke="#ff3030" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>`);
+    parts.push(`<circle cx="${xs[target]}" cy="${bottom}" r="13" fill="#ff3030"/>`);
+    parts.push(`<text x="${xs[target]}" y="${bottom+5}" text-anchor="middle" font-size="13" font-weight="700" fill="white">当</text>`);
+    parts.push(`<circle cx="${xs[win]}" cy="${top}" r="16" fill="none" stroke="#ff0000" stroke-width="5"/>`);
+    parts.push(`<circle cx="${xs[win]}" cy="${top}" r="3.5" fill="#ff3030"/>`);
+
+    parts.push(`<text x="${W/2}" y="555" text-anchor="middle" font-size="14">出発位置${win+1}番が当選位置${target+1}番に導きます</text>`);
+    parts.push(`<text x="${W/2}" y="580" text-anchor="middle" font-size="14">配置された横線数: ${lastBars.length} / ${barCount} 本</text>`);
+    svg.innerHTML=parts.join('');
+  }
+
+  function drawChart(r){
+    const ctx=canvas.getContext('2d');
+    const {n,trials,counts}=r;
+    const probs=counts.map(c=>c/trials);
+    const dpr=window.devicePixelRatio||1;
+    const cssW=Math.min(850, canvas.parentElement.clientWidth-20);
+    const cssH=500;
+    canvas.style.width=cssW+'px'; canvas.style.height=cssH+'px';
+    canvas.width=Math.floor(cssW*dpr); canvas.height=Math.floor(cssH*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    const W=cssW,H=cssH;
+    ctx.clearRect(0,0,W,H);
+    ctx.font='14px sans-serif'; ctx.fillStyle='#111';
+
+    const M={l:75,r:28,t:55,b:72}, pw=W-M.l-M.r, ph=H-M.t-M.b;
+    const base=1/n;
+    const maxP=Math.max(...probs,base);
+    const yMax=Math.max(0.05, Math.ceil(maxP*1.2*1000)/1000);
+    const yTicks=8;
+
+    ctx.font='700 21px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(`あみだくじシミュレーション結果　試行回数：${trials}回`, W/2, 28);
+
+    ctx.strokeStyle='#e1e4e8'; ctx.lineWidth=1; ctx.font='12px sans-serif'; ctx.fillStyle='#111';
+    for(let j=0;j<=yTicks;j++){
+      const p=yMax*j/yTicks, y=M.t+ph-(p/yMax)*ph;
+      ctx.beginPath();ctx.moveTo(M.l,y);ctx.lineTo(W-M.r,y);ctx.stroke();
+      ctx.textAlign='right';ctx.fillText(p.toFixed(3),M.l-7,y+4);
+    }
+    ctx.strokeStyle='#111';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(M.l,M.t);ctx.lineTo(M.l,M.t+ph);ctx.lineTo(W-M.r,M.t+ph);ctx.stroke();
+
+    const slot=pw/n, bw=Math.min(95,slot*0.7);
+    for(let i=0;i<n;i++){
+      const x=M.l+slot*(i+0.5), h=(probs[i]/yMax)*ph, y=M.t+ph-h;
+      const hue=(i*58)%360;
+      ctx.fillStyle=`hsla(${hue},70%,55%,0.82)`;
+      ctx.strokeStyle='#333';ctx.lineWidth=1.2;
+      ctx.fillRect(x-bw/2,y,bw,h);ctx.strokeRect(x-bw/2,y,bw,h);
+      ctx.fillStyle='#111';ctx.textAlign='center';ctx.font='12px sans-serif';
+      ctx.fillText(probs[i].toFixed(4),x,Math.max(M.t+14,y-18));
+      ctx.fillText(`(${counts[i]} 回当選)`,x,Math.max(M.t+28,y-4));
+      ctx.font='14px sans-serif';ctx.fillText(String(i+1),x,M.t+ph+25);
+    }
+
+    if(baseEl.checked){
+      const y=M.t+ph-(base/yMax)*ph;
+      ctx.save();ctx.strokeStyle='#e11';ctx.lineWidth=2;ctx.setLineDash([9,6]);
+      ctx.beginPath();ctx.moveTo(M.l,y);ctx.lineTo(W-M.r,y);ctx.stroke();ctx.restore();
+      ctx.fillStyle='#e11';ctx.textAlign='left';ctx.font='700 13px sans-serif';
+      ctx.fillText(`均等確率ベースライン: ${base.toFixed(4)}`,M.l+10,Math.max(M.t+14,y-9));
+    }
+
+    ctx.fillStyle='#111';ctx.font='16px sans-serif';ctx.textAlign='center';
+    ctx.fillText('出発位置',M.l+pw/2,H-18);
+    ctx.save();ctx.translate(20,M.t+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText('確率',0,0);ctx.restore();
+
+    const maxIdx=probs.indexOf(Math.max(...probs));
+    statusEl.textContent=`最も高い推定確率: 出発位置${maxIdx+1}番 = ${probs[maxIdx].toFixed(4)}（${counts[maxIdx]} / ${trials}）`;
+  }
+
+  runBtn.addEventListener('click',runSimulation);
+  window.addEventListener('resize',()=>{ if(window.lastResult) drawChart(window.lastResult); });
+  runSimulation();
+})();
+</script>
+</body>
+</html>
