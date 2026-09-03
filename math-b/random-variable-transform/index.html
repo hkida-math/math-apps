@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>確率変数の変換</title>
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --text:#1f2937;
+      --muted:#667085;
+      --border:#d8dee8;
+      --accent:#2563eb;
+      --accent-soft:#eaf1ff;
+      --xbar:#4f76c7;
+      --ybar:#6b8f71;
+      --error:#b42318;
+      --error-bg:#fff1f0;
+      --ok:#067647;
+      --ok-bg:#ecfdf3;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Yu Gothic UI","Yu Gothic","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      line-height:1.6;
+    }
+    .wrap{max-width:1120px;margin:0 auto;padding:24px 16px 44px}
+    h1{font-size:clamp(1.5rem,2.5vw,2rem);margin:0 0 6px}
+    .lead{margin:0 0 20px;color:var(--muted)}
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:18px;
+      margin-bottom:16px;
+    }
+    .card h2{font-size:1.08rem;margin:0 0 6px}
+    .sub{margin:0 0 14px;color:var(--muted);font-size:.9rem}
+    .table-wrap{overflow-x:auto}
+    table{
+      width:100%;
+      min-width:650px;
+      border-collapse:collapse;
+      table-layout:fixed;
+    }
+    th,td{border:1px solid var(--border);padding:7px;text-align:center}
+    th{background:#f3f5f8;font-weight:600}
+    th.rowhead{width:110px}
+    input{
+      width:100%;
+      min-width:64px;
+      font-size:16px;
+      text-align:center;
+      padding:9px 6px;
+      border:1px solid var(--border);
+      border-radius:8px;
+      background:#fff;
+      color:var(--text);
+    }
+    input:focus{
+      outline:3px solid var(--accent-soft);
+      border-color:var(--accent);
+    }
+    input[aria-invalid="true"]{
+      border-color:var(--error);
+      background:#fff7f6;
+    }
+    .status{
+      margin-top:12px;
+      border-radius:10px;
+      padding:10px 12px;
+      border:1px solid var(--border);
+      font-size:.95rem;
+    }
+    .status.ok{color:var(--ok);background:var(--ok-bg);border-color:#a6f4c5}
+    .status.error{color:var(--error);background:var(--error-bg);border-color:#fecdca}
+    .transform{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      gap:10px;
+      font-size:1.35rem;
+      font-weight:600;
+      margin:14px 0 4px;
+    }
+    .transform input{width:95px;min-width:95px;font-weight:600}
+    .relation{
+      margin-top:12px;
+      background:#f8fafc;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:11px 13px;
+      font-size:.94rem;
+    }
+    .charts{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
+    }
+    .chart-card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:16px;
+      min-width:0;
+    }
+    .chart-card h2{margin:0 0 2px;font-size:1.05rem}
+    .chart-wrap{width:100%;overflow-x:auto}
+    svg{display:block;width:100%;min-width:500px;height:auto}
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:12px;
+      margin-top:12px;
+    }
+    .stat{
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:#fff;
+      padding:13px;
+    }
+    .stat .label{font-size:.85rem;color:var(--muted)}
+    .stat .values{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+      margin-top:6px;
+    }
+    .mini{
+      background:#f8fafc;
+      border-radius:8px;
+      padding:8px;
+      min-width:0;
+    }
+    .mini .name{font-size:.78rem;color:var(--muted)}
+    .mini .value{font-size:1.35rem;font-weight:700;word-break:break-all}
+    .note{
+      margin-top:16px;
+      background:#fff;
+      border:1px solid var(--border);
+      border-left:4px solid var(--accent);
+      border-radius:12px;
+      padding:14px 16px;
+    }
+    .actions{display:flex;justify-content:flex-end;margin-top:12px}
+    button{
+      appearance:none;border:1px solid var(--border);background:#fff;color:var(--text);
+      border-radius:9px;padding:10px 14px;font-size:15px;cursor:pointer
+    }
+    button:hover{background:#f8fafc}
+    .footer{margin-top:18px;color:var(--muted);font-size:.82rem;text-align:right}
+    @media(max-width:850px){
+      .charts{grid-template-columns:1fr}
+      .stats{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>確率変数の変換</h1>
+    <p class="lead">確率変数 X を Y = aX + b に変換したとき、確率分布・期待値（平均）・分散・標準偏差がどのように変化するか調べます。</p>
+
+    <section class="card">
+      <h2>1．確率変数 X の確率分布</h2>
+      <p class="sub">確率は小数または分数（例：1/6）で入力できます。確率の和が1でない場合はエラーになります。</p>
+
+      <div class="table-wrap">
+        <table aria-label="確率変数Xの確率分布入力表">
+          <tbody>
+            <tr>
+              <th class="rowhead">確率変数 X</th>
+              <td><input class="x-input" value="1" inputmode="decimal" aria-label="Xの値1"></td>
+              <td><input class="x-input" value="2" inputmode="decimal" aria-label="Xの値2"></td>
+              <td><input class="x-input" value="3" inputmode="decimal" aria-label="Xの値3"></td>
+              <td><input class="x-input" value="4" inputmode="decimal" aria-label="Xの値4"></td>
+              <td><input class="x-input" value="5" inputmode="decimal" aria-label="Xの値5"></td>
+              <td><input class="x-input" value="6" inputmode="decimal" aria-label="Xの値6"></td>
+            </tr>
+            <tr>
+              <th class="rowhead">確率 P</th>
+              <td><input class="p-input" value="1/6" inputmode="text" aria-label="確率1"></td>
+              <td><input class="p-input" value="1/6" inputmode="text" aria-label="確率2"></td>
+              <td><input class="p-input" value="1/6" inputmode="text" aria-label="確率3"></td>
+              <td><input class="p-input" value="1/6" inputmode="text" aria-label="確率4"></td>
+              <td><input class="p-input" value="1/6" inputmode="text" aria-label="確率5"></td>
+              <td><input class="p-input" value="1/6" inputmode="text" aria-label="確率6"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="stats" style="margin-top:12px" aria-label="確率変数Xの特徴量">
+        <div class="stat">
+          <div class="label">期待値（平均）</div>
+          <div class="mini" style="margin-top:6px">
+            <div class="name">E(X)</div>
+            <div id="meanXTop" class="value">—</div>
+          </div>
+        </div>
+        <div class="stat">
+          <div class="label">分散</div>
+          <div class="mini" style="margin-top:6px">
+            <div class="name">V(X)</div>
+            <div id="varXTop" class="value">—</div>
+          </div>
+        </div>
+        <div class="stat">
+          <div class="label">標準偏差</div>
+          <div class="mini" style="margin-top:6px">
+            <div class="name">σ(X)</div>
+            <div id="sdXTop" class="value">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="status" class="status" aria-live="polite"></div>
+      <div class="actions"><button id="resetBtn" type="button">初期値に戻す</button></div>
+    </section>
+
+    <section class="card">
+      <h2>2．新しい確率変数 Y を設定</h2>
+      <div class="transform" aria-label="YイコールaXプラスb">
+        <span>Y =</span>
+        <input id="aInput" value="2" inputmode="decimal" aria-label="Xの係数a">
+        <span>X +</span>
+        <input id="bInput" value="0" inputmode="decimal" aria-label="定数b">
+      </div>
+      <p class="sub">a と b を変えて、分布の位置や散らばりがどのように変化するか確認してください。</p>
+
+      <div class="table-wrap">
+        <table aria-label="確率変数Yの確率分布表">
+          <tbody>
+            <tr>
+              <th class="rowhead">確率変数 Y</th>
+              <td class="y-value">—</td><td class="y-value">—</td><td class="y-value">—</td>
+              <td class="y-value">—</td><td class="y-value">—</td><td class="y-value">—</td>
+            </tr>
+            <tr>
+              <th class="rowhead">確率 P</th>
+              <td class="y-prob">—</td><td class="y-prob">—</td><td class="y-prob">—</td>
+              <td class="y-prob">—</td><td class="y-prob">—</td><td class="y-prob">—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="relation" class="relation" aria-live="polite"></div>
+    </section>
+
+    <section class="charts">
+      <div class="chart-card">
+        <h2>確率変数 X の確率柱状図</h2>
+        <p class="sub">破線は期待値 E(X) の位置を表します。</p>
+        <div class="chart-wrap"><svg id="chartX" viewBox="0 0 620 340" role="img" aria-label="確率変数Xの確率柱状図"></svg></div>
+      </div>
+      <div class="chart-card">
+        <h2>確率変数 Y の確率柱状図</h2>
+        <p class="sub">Xと同じ横軸尺度で表示します。</p>
+        <div class="chart-wrap"><svg id="chartY" viewBox="0 0 620 340" role="img" aria-label="確率変数Yの確率柱状図"></svg></div>
+      </div>
+    </section>
+
+    <section class="stats" aria-label="XとYの特徴量の比較">
+      <div class="stat">
+        <div class="label">期待値（平均）</div>
+        <div class="values">
+          <div class="mini"><div class="name">E(X)</div><div id="meanX" class="value">—</div></div>
+          <div class="mini"><div class="name">E(Y)</div><div id="meanY" class="value">—</div></div>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="label">分散</div>
+        <div class="values">
+          <div class="mini"><div class="name">V(X)</div><div id="varX" class="value">—</div></div>
+          <div class="mini"><div class="name">V(Y)</div><div id="varY" class="value">—</div></div>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="label">標準偏差</div>
+        <div class="values">
+          <div class="mini"><div class="name">σ(X)</div><div id="sdX" class="value">—</div></div>
+          <div class="mini"><div class="name">σ(Y)</div><div id="sdY" class="value">—</div></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">入力内容はブラウザ内だけで処理され、外部へ送信されません。</div>
+  </main>
+
+<script>
+(() => {
+  const xInputs = [...document.querySelectorAll('.x-input')];
+  const pInputs = [...document.querySelectorAll('.p-input')];
+  const aInput = document.getElementById('aInput');
+  const bInput = document.getElementById('bInput');
+  const status = document.getElementById('status');
+  const resetBtn = document.getElementById('resetBtn');
+  const yValueCells = [...document.querySelectorAll('.y-value')];
+  const yProbCells = [...document.querySelectorAll('.y-prob')];
+  const relation = document.getElementById('relation');
+  const chartX = document.getElementById('chartX');
+  const chartY = document.getElementById('chartY');
+
+  const meanXEl = document.getElementById('meanX');
+  const meanYEl = document.getElementById('meanY');
+  const varXEl = document.getElementById('varX');
+  const varYEl = document.getElementById('varY');
+  const sdXEl = document.getElementById('sdX');
+  const sdYEl = document.getElementById('sdY');
+
+  const meanXTopEl = document.getElementById('meanXTop');
+  const varXTopEl = document.getElementById('varXTop');
+  const sdXTopEl = document.getElementById('sdXTop');
+
+  const initialX = ['1','2','3','4','5','6'];
+  const initialP = ['1/6','1/6','1/6','1/6','1/6','1/6'];
+
+  function parseNumber(text){
+    const s = String(text).trim().replace(/－/g,'-').replace(/／/g,'/');
+    if(!s) return NaN;
+    const frac = s.match(/^([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*\/\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))$/);
+    if(frac){
+      const n = Number(frac[1]), d = Number(frac[2]);
+      return Number.isFinite(n) && Number.isFinite(d) && d !== 0 ? n/d : NaN;
+    }
+    const n = Number(s);
+    return Number.isFinite(n) ? n : NaN;
+  }
+
+  function fmt(n){
+    if(!Number.isFinite(n)) return '—';
+    if(Math.abs(n) < 1e-12) n = 0;
+    if(Math.abs(n - Math.round(n)) < 1e-10) return String(Math.round(n));
+    return String(Number(n.toFixed(6)));
+  }
+
+  function gcd(a,b){
+    a=Math.abs(a); b=Math.abs(b);
+    while(b){ const t=b; b=a%b; a=t; }
+    return a;
+  }
+
+  function toFraction(n){
+    if(!Number.isFinite(n)) return '—';
+    if(Math.abs(n) < 1e-12) return '0';
+    if(Math.abs(n-1) < 1e-12) return '1';
+
+    const maxDen=10000;
+    let bestNum=0, bestDen=1, bestErr=Infinity;
+
+    for(let den=1; den<=maxDen; den++){
+      const num=Math.round(n*den);
+      const err=Math.abs(n-num/den);
+      if(err < bestErr){
+        bestErr=err; bestNum=num; bestDen=den;
+        if(err < 1e-10) break;
+      }
+    }
+
+    const g=gcd(bestNum,bestDen);
+    bestNum/=g; bestDen/=g;
+    return bestDen===1 ? String(bestNum) : `${bestNum}/${bestDen}`;
+  }
+
+  function setStatus(msg, type){
+    status.textContent = msg;
+    status.className = 'status ' + type;
+  }
+
+  function clearResults(){
+    [meanXEl,meanYEl,varXEl,varYEl,sdXEl,sdYEl,meanXTopEl,varXTopEl,sdXTopEl].forEach(el=>el.textContent='—');
+    relation.textContent = '';
+    yValueCells.forEach(c=>c.textContent='—');
+    yProbCells.forEach(c=>c.textContent='—');
+    clearSVG(chartX); clearSVG(chartY);
+  }
+
+  function clearSVG(svg){ while(svg.firstChild) svg.removeChild(svg.firstChild); }
+
+  function svgEl(tag, attrs={}){
+    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,String(v)));
+    return el;
+  }
+
+  function aggregate(values, probs){
+    const map = new Map();
+    values.forEach((v,i)=>{
+      const key = Number(v.toPrecision(12));
+      map.set(key, (map.get(key) || 0) + probs[i]);
+    });
+    return [...map.entries()].map(([x,p])=>({x:Number(x),p})).sort((a,b)=>a.x-b.x);
+  }
+
+  function moments(data){
+    const mean = data.reduce((s,d)=>s+d.x*d.p,0);
+    const variance = data.reduce((s,d)=>s+(d.x-mean)*(d.x-mean)*d.p,0);
+    return {mean, variance, sd:Math.sqrt(Math.max(0,variance))};
+  }
+
+  function draw(svg, data, mean, sharedMin, sharedMax, barColor){
+    clearSVG(svg);
+    const W=620,H=340,m={l:62,r:24,t:30,b:60};
+    const iw=W-m.l-m.r, ih=H-m.t-m.b;
+    let xMin=sharedMin, xMax=sharedMax;
+    if(xMin===xMax){xMin-=1;xMax+=1}
+    const span=xMax-xMin;
+    xMin-=span*0.06; xMax+=span*0.06;
+
+    const pMaxRaw=Math.max(...data.map(d=>d.p),0.1);
+    const yMax=Math.min(1,Math.max(0.2,Math.ceil(pMaxRaw*10)/10));
+    const sx=x=>m.l+(x-xMin)/(xMax-xMin)*iw;
+    const sy=p=>m.t+ih-p/yMax*ih;
+
+    for(let i=0;i<=5;i++){
+      const p=yMax*i/5,y=sy(p);
+      svg.appendChild(svgEl('line',{x1:m.l,y1:y,x2:W-m.r,y2:y,stroke:'#d8dee8','stroke-width':1}));
+      const t=svgEl('text',{x:m.l-10,y:y+4,'text-anchor':'end','font-size':12,fill:'#667085'});
+      t.textContent=fmt(p); svg.appendChild(t);
+    }
+    svg.appendChild(svgEl('line',{x1:m.l,y1:m.t,x2:m.l,y2:H-m.b,stroke:'#1f2937','stroke-width':1.2}));
+    svg.appendChild(svgEl('line',{x1:m.l,y1:H-m.b,x2:W-m.r,y2:H-m.b,stroke:'#1f2937','stroke-width':1.2}));
+
+    const positions=data.map(d=>sx(d.x)).sort((a,b)=>a-b);
+    let minGap=iw/Math.max(1,data.length);
+    for(let i=1;i<positions.length;i++) minGap=Math.min(minGap,positions[i]-positions[i-1]);
+    const bw=Math.max(18,Math.min(58,minGap*0.55));
+
+    data.forEach(d=>{
+      const x=sx(d.x),y=sy(d.p),base=H-m.b;
+      svg.appendChild(svgEl('rect',{x:x-bw/2,y,width:bw,height:Math.max(0,base-y),rx:4,fill:barColor}));
+      const pt=svgEl('text',{x,y:Math.max(m.t+12,y-7),'text-anchor':'middle','font-size':12,fill:'#1f2937'});
+      pt.textContent=fmt(d.p); svg.appendChild(pt);
+      const xt=svgEl('text',{x,y:base+24,'text-anchor':'middle','font-size':13,fill:'#1f2937'});
+      xt.textContent=fmt(d.x); svg.appendChild(xt);
+    });
+
+    if(mean>=xMin && mean<=xMax){
+      const mx=sx(mean);
+      svg.appendChild(svgEl('line',{x1:mx,y1:m.t,x2:mx,y2:H-m.b,stroke:'#2563eb','stroke-width':2,'stroke-dasharray':'7 5'}));
+      const mt=svgEl('text',{x:mx,y:m.t+13,'text-anchor':'middle','font-size':12,'font-weight':700,fill:'#2563eb'});
+      mt.textContent='平均 '+fmt(mean); svg.appendChild(mt);
+    }
+
+    const xTitle=svgEl('text',{x:m.l+iw/2,y:H-12,'text-anchor':'middle','font-size':13,fill:'#667085'});
+    xTitle.textContent='確率変数の値'; svg.appendChild(xTitle);
+    const yTitle=svgEl('text',{x:18,y:m.t+ih/2,'text-anchor':'middle','font-size':13,fill:'#667085',transform:`rotate(-90 18 ${m.t+ih/2})`});
+    yTitle.textContent='確率'; svg.appendChild(yTitle);
+  }
+
+  function update(){
+    const xs=xInputs.map(el=>parseNumber(el.value));
+    const ps=pInputs.map(el=>parseNumber(el.value));
+    const a=parseNumber(aInput.value);
+    const b=parseNumber(bInput.value);
+
+    xInputs.forEach((el,i)=>el.setAttribute('aria-invalid',Number.isFinite(xs[i])?'false':'true'));
+    pInputs.forEach((el,i)=>{
+      const ok=Number.isFinite(ps[i])&&ps[i]>=0&&ps[i]<=1;
+      el.setAttribute('aria-invalid',ok?'false':'true');
+    });
+    aInput.setAttribute('aria-invalid',Number.isFinite(a)?'false':'true');
+    bInput.setAttribute('aria-invalid',Number.isFinite(b)?'false':'true');
+
+    if(xs.some(v=>!Number.isFinite(v))||ps.some(v=>!Number.isFinite(v))||!Number.isFinite(a)||!Number.isFinite(b)){
+      setStatus('エラー：すべての欄に数値または分数を入力してください。','error'); clearResults(); return;
+    }
+    if(ps.some(p=>p<0||p>1)){
+      setStatus('エラー：確率は0以上1以下で入力してください。','error'); clearResults(); return;
+    }
+    const roundedX=xs.map(v=>Number(v.toPrecision(12)));
+    if(new Set(roundedX).size!==roundedX.length){
+      setStatus('エラー：確率変数 X の値は重複しないように入力してください。','error'); clearResults(); return;
+    }
+    const sumP=ps.reduce((s,p)=>s+p,0);
+    if(Math.abs(sumP-1)>1e-8){
+      setStatus(`エラー：確率の和を1にしてください。現在の和は ${fmt(sumP)} です。`,'error'); clearResults(); return;
+    }
+
+    const xData=aggregate(xs,ps);
+    const ys=xs.map(x=>a*x+b);
+    const yData=aggregate(ys,ps);
+
+    yValueCells.forEach((cell,i)=>cell.textContent = yData[i] ? fmt(yData[i].x) : '');
+    yProbCells.forEach((cell,i)=>cell.textContent = yData[i] ? toFraction(yData[i].p) : '');
+
+    const mx=moments(xData), my=moments(yData);
+    meanXEl.textContent=fmt(mx.mean); meanYEl.textContent=fmt(my.mean);
+    varXEl.textContent=fmt(mx.variance); varYEl.textContent=fmt(my.variance);
+    sdXEl.textContent=fmt(mx.sd); sdYEl.textContent=fmt(my.sd);
+
+    meanXTopEl.textContent=fmt(mx.mean);
+    varXTopEl.textContent=fmt(mx.variance);
+    sdXTopEl.textContent=fmt(mx.sd);
+
+    relation.innerHTML =
+      `<strong>変換による関係：</strong> `+
+      `E(Y) = ${fmt(a)}E(X) ${b>=0?'+':'−'} ${fmt(Math.abs(b))} = ${fmt(my.mean)}， `+
+      `V(Y) = (${fmt(a)})²V(X) = ${fmt(my.variance)}， `+
+      `σ(Y) = |${fmt(a)}|σ(X) = ${fmt(my.sd)}`;
+
+    const allVals=[...xData.map(d=>d.x),...yData.map(d=>d.x)];
+    const sharedMin=Math.min(...allVals), sharedMax=Math.max(...allVals);
+    draw(chartX,xData,mx.mean,sharedMin,sharedMax,'#4f76c7');
+    draw(chartY,yData,my.mean,sharedMin,sharedMax,'#6b8f71');
+
+    setStatus('確率の和 = 1　✓　有効な確率分布です。','ok');
+  }
+
+  [...xInputs,...pInputs,aInput,bInput].forEach(el=>el.addEventListener('input',update));
+  resetBtn.addEventListener('click',()=>{
+    xInputs.forEach((el,i)=>el.value=initialX[i]);
+    pInputs.forEach((el,i)=>el.value=initialP[i]);
+    aInput.value='2'; bInput.value='0'; update();
+  });
+  update();
+})();
+</script>
+</body>
+</html>
