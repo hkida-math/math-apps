@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>7戦4勝制 試合数確率シミュレーター</title>
+  <style>
+    :root{
+      --bg:#f3f4f6;
+      --card:#f7f9fc;
+      --line:#d8dee8;
+      --text:#1f2937;
+      --muted:#5b6474;
+      --blue:#1d4ed8;
+      --blue2:#3b82f6;
+      --softBlue:#e7eef8;
+      --greenBg:#e8f5e9;
+      --greenText:#15803d;
+      --white:#ffffff;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Yu Gothic","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;
+      color:var(--text);
+      background:var(--bg);
+      line-height:1.6;
+    }
+    .container{
+      width:min(1080px, calc(100% - 24px));
+      margin:0 auto;
+      padding:12px 0 32px;
+    }
+    h1{
+      margin:0;
+      color:var(--blue);
+      font-size:clamp(1.6rem,3.6vw,2.2rem);
+      font-weight:800;
+    }
+    .subtitle{
+      margin:8px 0 28px;
+      color:#374151;
+      font-size:clamp(.98rem,2vw,1.06rem);
+    }
+    .card{
+      background:var(--card);
+      border-radius:10px;
+      padding:22px 24px;
+      margin-bottom:22px;
+      box-shadow:0 0 0 1px rgba(216,222,232,.7) inset;
+    }
+    .card h2{
+      margin:0 0 14px;
+      color:var(--blue);
+      font-size:1.05rem;
+    }
+    .setting-row{
+      display:grid;
+      grid-template-columns:auto 1fr 88px;
+      gap:16px;
+      align-items:center;
+      margin-top:6px;
+    }
+    .setting-row label{
+      font-size:1rem;
+      font-weight:700;
+      white-space:nowrap;
+    }
+    input[type="range"]{
+      width:100%;
+      accent-color:var(--blue2);
+    }
+    .num-input{
+      width:100%;
+      padding:8px 10px;
+      border:1px solid var(--line);
+      border-radius:6px;
+      background:#fff;
+      font-size:1rem;
+    }
+    .small{
+      margin-top:8px;
+      color:#475569;
+    }
+    .chart-wrap{
+      overflow-x:auto;
+    }
+    #chartSvg{
+      width:100%;
+      min-width:740px;
+      height:auto;
+      display:block;
+      background:#fff;
+      border-radius:8px;
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:#fff;
+      margin-top:10px;
+    }
+    th,td{
+      border:1px solid #c8d1dc;
+      padding:12px 14px;
+      text-align:left;
+      vertical-align:middle;
+    }
+    th{
+      background:#dbe7f5;
+      color:#111827;
+      font-weight:700;
+    }
+    .formula{
+      font-family:"Consolas","Menlo","Courier New",monospace;
+      font-size:.98rem;
+      white-space:nowrap;
+    }
+    ul{
+      margin:8px 0 0 0;
+      padding-left:1.25rem;
+    }
+    li{margin:8px 0}
+    .footnote{
+      color:#64748b;
+      font-size:.92rem;
+      margin-top:10px;
+    }
+    @media (max-width:860px){
+    }
+    @media (max-width:640px){
+      .container{width:min(100% - 16px, 860px)}
+      .card{padding:16px}
+      .setting-row{
+        grid-template-columns:1fr;
+        gap:8px;
+      }
+      .setting-row label{white-space:normal}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>7戦4勝制 試合数確率シミュレーター</h1>
+    <div class="subtitle">先に4勝したほうが勝利する対戦での試合数の確率分布（理論値）</div>
+
+    <section class="card">
+      <h2>設定</h2>
+      <div class="setting-row">
+        <label for="pRange">Aの勝つ確率 p =</label>
+        <input id="pRange" type="range" min="0" max="1" step="0.01" value="0.50" />
+        <input id="pInput" class="num-input" type="number" min="0" max="1" step="0.01" value="0.50" />
+      </div>
+      <div id="qText" class="small">Bの勝つ確率 = 0.50</div>
+    </section>
+
+    <section class="card">
+      <h2>確率分布グラフ</h2>
+      <div class="chart-wrap">
+        <svg id="chartSvg" viewBox="0 0 860 360" preserveAspectRatio="xMidYMid meet" aria-label="確率分布グラフ"></svg>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>理論値による確率分布</h2>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:19%">試合数 X</th>
+            <th style="width:21%">確率 P(X)</th>
+            <th>計算式の説明</th>
+          </tr>
+        </thead>
+        <tbody id="theoryTableBody"></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+        <h2>計算の考え方</h2>
+        <ul>
+          <li>各試合数Xにおいて，最後の試合で勝負が決まる。</li>
+          <li>X−1試合目までは片方が3勝，相手がX−4敗の状態になっている。</li>
+          <li>X試合目で3勝していた方が4勝目を挙げて勝利する。</li>
+          <li>したがって，<strong>「最初のX−1試合の並び方」×「最後の1勝」</strong> と考えることができる。</li>
+          <li>数学A「独立試行の確率」の考え方を用いると，
+            <span class="formula">P(X=4), P(X=5), P(X=6), P(X=7)</span>
+            が求められる。</li>
+        </ul>
+        <div class="footnote">※ p は A が1試合に勝つ確率，1−p は B が1試合に勝つ確率です。</div>
+      </section>
+  </div>
+
+<script>
+(() => {
+  const pRange = document.getElementById('pRange');
+  const pInput = document.getElementById('pInput');
+  const qText = document.getElementById('qText');
+  const theoryTableBody = document.getElementById('theoryTableBody');
+  const chartSvg = document.getElementById('chartSvg');
+
+
+  function comb(n, r){
+    if(r < 0 || r > n) return 0;
+    r = Math.min(r, n-r);
+    let ans = 1;
+    for(let i=1;i<=r;i++){
+      ans = ans * (n-r+i) / i;
+    }
+    return ans;
+  }
+
+  function fmt(x, digits=6){
+    return Number(x).toFixed(digits);
+  }
+
+  function getP(){
+    let p = Number(pInput.value);
+    if(Number.isNaN(p)) p = 0.5;
+    p = Math.max(0, Math.min(1, p));
+    return p;
+  }
+
+  function syncFromRange(){
+    pInput.value = Number(pRange.value).toFixed(2);
+    updateAll();
+  }
+
+  function syncFromInput(){
+    let p = getP();
+    pInput.value = p.toFixed(2);
+    pRange.value = p.toFixed(2);
+    updateAll();
+  }
+
+  function getData(p){
+    const q = 1 - p;
+    const p4 = Math.pow(p,4) + Math.pow(q,4);
+    const p5 = comb(4,1)*Math.pow(p,4)*q + comb(4,1)*p*Math.pow(q,4);
+    const p6 = comb(5,2)*Math.pow(p,4)*Math.pow(q,2) + comb(5,2)*Math.pow(p,2)*Math.pow(q,4);
+    const p7 = comb(6,3)*Math.pow(p,4)*Math.pow(q,3) + comb(6,3)*Math.pow(p,3)*Math.pow(q,4);
+    return [
+      {
+        x:4,
+        prob:p4,
+        formulaText:`p^4 + (1-p)^4`,
+        explain:`4-0 または 0-4`
+      },
+      {
+        x:5,
+        prob:p5,
+        formulaText:`4C1 p^4(1-p) + 4C1 p(1-p)^4`,
+        explain:`4-1 または 1-4`
+      },
+      {
+        x:6,
+        prob:p6,
+        formulaText:`5C2 p^4(1-p)^2 + 5C2 p^2(1-p)^4`,
+        explain:`4-2 または 2-4`
+      },
+      {
+        x:7,
+        prob:p7,
+        formulaText:`6C3 p^4(1-p)^3 + 6C3 p^3(1-p)^4`,
+        explain:`4-3 または 3-4`
+      }
+    ];
+  }
+
+  function updateTable(data){
+    theoryTableBody.innerHTML = '';
+    data.forEach(row => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${row.x}</strong></td>
+        <td class="formula">${fmt(row.prob)}</td>
+        <td><span class="formula">${row.formulaText}</span>　（${row.explain}）</td>
+      `;
+      theoryTableBody.appendChild(tr);
+    });
+  }
+
+  function drawChart(data){
+    const width = 860, height = 360;
+    const left = 58, right = 18, top = 20, bottom = 52;
+    const innerW = width - left - right;
+    const innerH = height - top - bottom;
+    const maxVal = Math.max(...data.map(d => d.prob), 0.35);
+    const niceMax = Math.ceil(maxVal / 0.05) * 0.05;
+
+    let svg = '';
+    svg += `<rect x="0" y="0" width="${width}" height="${height}" fill="white"></rect>`;
+
+    for(let i=0;i<=4;i++){
+      const val = niceMax * i / 4;
+      const y = top + innerH - innerH * (val / niceMax);
+      svg += `<line x1="${left}" y1="${y}" x2="${width-right}" y2="${y}" stroke="#c7ced8" stroke-dasharray="4 4"></line>`;
+      svg += `<text x="${left-8}" y="${y+5}" text-anchor="end" font-size="12" fill="#4b5563">${Number(val.toFixed(4))}</text>`;
+    }
+
+    svg += `<line x1="${left}" y1="${top}" x2="${left}" y2="${height-bottom}" stroke="#666"></line>`;
+    svg += `<line x1="${left}" y1="${height-bottom}" x2="${width-right}" y2="${height-bottom}" stroke="#666"></line>`;
+
+    const gap = 42;
+    const barW = (innerW - gap * (data.length + 1)) / data.length;
+
+    data.forEach((d, i) => {
+      const x = left + gap + i * (barW + gap);
+      const h = innerH * (d.prob / niceMax);
+      const y = top + innerH - h;
+
+      svg += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="3" ry="3" fill="#3f7de0"></rect>`;
+      svg += `<text x="${x + barW/2}" y="${height-bottom+18}" text-anchor="middle" font-size="16" fill="#4b5563">${d.x}</text>`;
+      svg += `<text x="${x + barW/2}" y="${y-8}" text-anchor="middle" font-size="12" fill="#1f2937">${d.prob.toFixed(4)}</text>`;
+    });
+
+    svg += `<text x="${width/2}" y="${height-14}" text-anchor="middle" font-size="14" fill="#4b5563">試合数</text>`;
+    svg += `<text x="20" y="${height/2}" text-anchor="middle" font-size="14" fill="#4b5563" transform="rotate(-90 20 ${height/2})">確率</text>`;
+
+    chartSvg.innerHTML = svg;
+  }
+
+  function updateAll(){
+    const p = getP();
+    const q = 1 - p;
+    qText.textContent = `Bの勝つ確率 = ${q.toFixed(2)}`;
+
+    const data = getData(p);
+    updateTable(data);
+    drawChart(data);
+  }
+
+  pRange.addEventListener('input', syncFromRange);
+  pInput.addEventListener('change', syncFromInput);
+
+  updateAll();
+})();
+</script>
+</body>
+</html>
