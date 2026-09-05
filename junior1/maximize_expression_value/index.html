@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>式の値を大きくしよう</title>
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --ink:#18212f;
+      --muted:#657084;
+      --line:#d9e0ea;
+      --accent:#2563eb;
+      --accent-soft:#eaf1ff;
+      --good:#0f8a5f;
+      --good-soft:#e7f7f0;
+      --warn:#b45309;
+      --warn-soft:#fff4df;
+      --danger:#c2414b;
+      --shadow:0 8px 28px rgba(22,34,51,.08);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+      color:var(--ink);
+      background:linear-gradient(180deg,#eef4ff 0,#f8fafc 240px,var(--bg) 100%);
+    }
+    button,select,textarea{font:inherit}
+    button{touch-action:manipulation}
+    .wrap{
+      width:min(1040px,calc(100% - 28px));
+      margin:0 auto;
+      padding:28px 0 56px;
+    }
+    header{
+      margin-bottom:18px;
+    }
+    h1{
+      margin:0 0 8px;
+      font-size:clamp(28px,4vw,42px);
+      letter-spacing:.02em;
+    }
+    .lead{
+      margin:0;
+      color:var(--muted);
+      line-height:1.75;
+      font-size:15px;
+    }
+    .rulebar{
+      margin-top:16px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .badge{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:8px 12px;
+      font-weight:700;
+      font-size:14px;
+      box-shadow:0 2px 8px rgba(15,23,42,.04);
+    }
+    .card{
+      background:var(--card);
+      border:1px solid #e7ebf1;
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:22px;
+      margin-top:16px;
+    }
+    .section-title{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin:0 0 16px;
+      font-size:20px;
+    }
+    .step{
+      display:inline-grid;
+      place-items:center;
+      width:30px;height:30px;
+      border-radius:50%;
+      background:var(--accent);
+      color:white;
+      font-size:15px;
+      flex:0 0 auto;
+    }
+    .mode-row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:16px;
+    }
+    .mode-btn{
+      border:1px solid var(--line);
+      background:white;
+      padding:10px 15px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:700;
+      color:var(--ink);
+    }
+    .mode-btn.active{
+      background:var(--accent);
+      color:white;
+      border-color:var(--accent);
+    }
+    .expr-shell{
+      padding:18px 12px;
+      border-radius:16px;
+      background:#fbfcfe;
+      border:2px solid #edf1f6;
+      overflow-x:auto;
+    }
+    .expr{
+      min-width:690px;
+      display:grid;
+      grid-template-columns:repeat(9,1fr);
+      align-items:end;
+      gap:8px;
+      position:relative;
+      padding:28px 4px 6px;
+    }
+    .slot-wrap{position:relative}
+    .slot{
+      width:100%;
+      min-height:64px;
+      border:2px dashed #b8c2d2;
+      background:white;
+      border-radius:14px;
+      display:grid;
+      place-items:center;
+      font-size:27px;
+      font-weight:800;
+      cursor:pointer;
+      color:var(--ink);
+      transition:.15s;
+    }
+    .slot:hover{border-color:#7ea5f4}
+    .slot.selected{
+      outline:4px solid rgba(37,99,235,.14);
+      border-color:var(--accent);
+      background:var(--accent-soft);
+    }
+    .slot.op{
+      min-height:54px;
+      font-size:25px;
+      margin-top:10px;
+    }
+    .paren-left,.paren-right{
+      position:absolute;
+      top:32px;
+      transform:translateY(-50%);
+      z-index:2;
+      font-size:48px;
+      line-height:1;
+      font-weight:300;
+      color:var(--accent);
+      pointer-events:none;
+    }
+    .paren-left{left:-24px}
+    .paren-right{right:-24px}
+    .slot-label{
+      text-align:center;
+      font-size:11px;
+      color:#8792a4;
+      margin-top:6px;
+    }
+    .picker{
+      display:grid;
+      grid-template-columns:1.3fr .7fr;
+      gap:18px;
+      margin-top:18px;
+    }
+    .pick-title{
+      margin:0 0 8px;
+      font-size:14px;
+      color:var(--muted);
+      font-weight:700;
+    }
+    .chips{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .chip{
+      min-width:52px;
+      height:46px;
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:12px;
+      font-size:18px;
+      font-weight:800;
+      cursor:pointer;
+    }
+    .chip:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft)}
+    .chip:disabled{
+      opacity:.35;
+      cursor:not-allowed;
+      text-decoration:line-through;
+    }
+    .paren-panel{
+      margin-top:18px;
+      border-top:1px solid var(--line);
+      padding-top:16px;
+      display:none;
+    }
+    .paren-panel.show{display:block}
+    .paren-help{
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.7;
+      margin:0 0 12px;
+      font-weight:700;
+    }
+    .paren-controls{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:12px;
+      max-width:760px;
+    }
+    .paren-row{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:#fbfcfe;
+    }
+    .paren-row-title{
+      margin:0 0 8px;
+      font-size:14px;
+      font-weight:800;
+      color:var(--ink);
+    }
+    .paren-spots{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .spot-btn{
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--ink);
+      border-radius:10px;
+      padding:9px 12px;
+      min-height:42px;
+      font-weight:800;
+      cursor:pointer;
+    }
+    .spot-btn.active{
+      background:var(--accent);
+      color:#fff;
+      border-color:var(--accent);
+    }
+    .actions{
+      margin-top:18px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+    }
+    .btn{
+      border:0;
+      border-radius:12px;
+      padding:12px 18px;
+      font-weight:800;
+      cursor:pointer;
+    }
+    .primary{background:var(--accent);color:#fff}
+    .secondary{background:#edf2f7;color:var(--ink)}
+    .ghost{background:white;border:1px solid var(--line);color:var(--ink)}
+    .danger{background:#fff0f1;color:var(--danger);border:1px solid #ffd5d8}
+    .message{
+      min-height:24px;
+      margin-top:12px;
+      font-size:14px;
+      color:var(--muted);
+      font-weight:700;
+    }
+    .message.error{color:var(--danger)}
+    .result-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+    .result-box{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:18px;
+      background:#fbfcfe;
+    }
+    .result-box.best{
+      background:var(--good-soft);
+      border-color:#bde7d4;
+    }
+    .result-label{
+      color:var(--muted);
+      font-size:13px;
+      font-weight:700;
+      margin-bottom:6px;
+    }
+    .result-value{
+      font-size:clamp(28px,5vw,46px);
+      font-weight:900;
+      letter-spacing:.01em;
+      word-break:break-all;
+    }
+    .result-sub{
+      margin-top:4px;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .new-best{
+      color:var(--good);
+      font-weight:900;
+      margin-top:6px;
+      display:none;
+    }
+    .new-best.show{display:block}
+    .history-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin:20px 0 10px;
+    }
+    .history-head h3{margin:0;font-size:16px}
+    .history{
+      display:grid;
+      gap:8px;
+    }
+    .attempt{
+      display:grid;
+      grid-template-columns:auto 1fr auto;
+      gap:10px;
+      align-items:center;
+      padding:12px 13px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:white;
+    }
+    .rank{
+      width:26px;height:26px;
+      border-radius:50%;
+      display:grid;place-items:center;
+      background:#edf2f7;
+      font-size:12px;font-weight:800;
+      color:var(--muted);
+    }
+    .attempt.best-attempt{
+      border-color:#bde7d4;
+      background:#f3fbf7;
+    }
+    .attempt.best-attempt .rank{background:var(--good);color:white}
+    .formula{
+      font-weight:800;
+      overflow-wrap:anywhere;
+    }
+    .score{
+      font-weight:900;
+      font-size:18px;
+      text-align:right;
+    }
+    .empty{
+      padding:18px;
+      color:var(--muted);
+      text-align:center;
+      border:1px dashed var(--line);
+      border-radius:12px;
+    }
+    .thinking{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
+    }
+    textarea{
+      width:100%;
+      min-height:120px;
+      resize:vertical;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px;
+      line-height:1.7;
+      color:var(--ink);
+      background:#fff;
+    }
+    .hint{
+      background:var(--warn-soft);
+      border:1px solid #f1d6a8;
+      border-radius:14px;
+      padding:14px 16px;
+      color:#6d4310;
+      line-height:1.7;
+      font-size:14px;
+    }
+    footer{
+      color:#8a94a6;
+      text-align:center;
+      font-size:12px;
+      margin-top:26px;
+    }
+    @media(max-width:760px){
+      .wrap{width:min(100% - 18px,1040px);padding-top:18px}
+      .card{padding:16px;border-radius:15px}
+      .picker,.result-grid,.thinking{grid-template-columns:1fr}
+      .expr-shell{padding:14px 8px}
+      .expr{min-width:620px}
+      .paren-controls{grid-template-columns:1fr}
+      .attempt{grid-template-columns:auto 1fr}
+      .score{grid-column:2;text-align:left}
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <h1>式の値を大きくしよう</h1>
+      <p class="lead">数や記号の位置を変えながら、式の値がどう変わるか何度も試してみよう。<br>入力した数や記号は、その欄をもう一度クリックすると取り消せます。「なぜ大きくなったのか」も考えながら、自分の最高記録を更新しよう。</p>
+      <div class="rulebar">
+        <span class="badge">数：−5〜−1，1〜5 から5個</span>
+        <span class="badge">同じ数は1回だけ</span>
+        <span class="badge">＋ − × ÷ を1回ずつ</span>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2 class="section-title"><span class="step">1</span>式をつくる</h2>
+
+      <div class="mode-row" aria-label="モード選択">
+        <button class="mode-btn active" id="normalMode">かっこなし</button>
+        <button class="mode-btn" id="parenMode">かっこを1か所使う</button>
+      </div>
+
+      <div class="expr-shell">
+        <div class="expr" id="exprGrid" aria-label="式入力欄"></div>
+      </div>
+
+      <div class="picker">
+        <div>
+          <p class="pick-title">数を選ぶ</p>
+          <div class="chips" id="numberChips"></div>
+        </div>
+        <div>
+          <p class="pick-title">記号を選ぶ</p>
+          <div class="chips" id="operatorChips"></div>
+        </div>
+      </div>
+
+      <div class="paren-panel" id="parenPanel">
+        <p class="pick-title">かっこの位置を選ぶ</p>
+        <p class="paren-help">下の位置をクリックして、「（」と「）」を自由に動かせます。1つの数だけを囲んでもかまいません。</p>
+        <div class="paren-controls">
+          <div class="paren-row">
+            <p class="paren-row-title">「（」の位置</p>
+            <div class="paren-spots" id="leftParenSpots"></div>
+          </div>
+          <div class="paren-row">
+            <p class="paren-row-title">「）」の位置</p>
+            <div class="paren-spots" id="rightParenSpots"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="calcBtn">この式を計算する</button>
+        <button class="btn secondary" id="randomBtn">ランダムに式をつくる</button>
+        <button class="btn ghost" id="clearBtn">式だけクリア</button>
+      </div>
+      <div class="message" id="message"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title"><span class="step">2</span>結果を比べる</h2>
+      <div class="result-grid">
+        <div class="result-box">
+          <div class="result-label">今回の結果</div>
+          <div class="result-value" id="currentResult">―</div>
+          <div class="result-sub" id="currentExpr">式を完成させて計算してください</div>
+        </div>
+        <div class="result-box best">
+          <div class="result-label">自分の最高記録</div>
+          <div class="result-value" id="bestResult">―</div>
+          <div class="result-sub" id="bestExpr">まだ記録がありません</div>
+          <div class="new-best" id="newBest">★ 最高記録を更新！</div>
+        </div>
+      </div>
+
+      <div class="history-head">
+        <h3>これまでの試行</h3>
+        <button class="btn danger" id="resetHistoryBtn">記録を全部消す</button>
+      </div>
+      <div class="history" id="history"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title"><span class="step">3</span>大きくする工夫を言葉にする</h2>
+      <div class="thinking">
+        <div>
+          <p class="pick-title">どこを変えると、値が大きくなりましたか？</p>
+          <textarea id="memo1" placeholder="例：負の数と引き算の組み合わせに注目した。"></textarea>
+        </div>
+        <div>
+          <p class="pick-title">次に試したいことは何ですか？</p>
+          <textarea id="memo2" placeholder="式を見比べて、次の作戦を書いてみよう。"></textarea>
+        </div>
+      </div>
+      <div class="hint" style="margin-top:16px">
+        <strong>考えるヒント：</strong>
+        「どの計算を先にするか」「負の数にどの記号を組み合わせるか」「かっこで計算の順序をどう変えるか」に注目すると、式の値の変化を説明しやすくなります。
+      </div>
+    </section>
+
+    <footer>中学1年 数学「正の数・負の数」試行錯誤用</footer>
+  </main>
+
+<script>
+(() => {
+  const numbers = [-5,-4,-3,-2,-1,1,2,3,4,5];
+  const operators = ['+','-','*','/'];
+  const opDisplay = {'+':'＋','-':'－','*':'×','/':'÷'};
+
+  let values = [null,null,null,null,null];
+  let ops = [null,null,null,null];
+  let selectedType = 'number';
+  let selectedIndex = 0;
+  let useParen = false;
+  let parenStart = 0;
+  let parenEnd = 1;
+  let attempts = [];
+
+  const exprGrid = document.getElementById('exprGrid');
+  const numberChips = document.getElementById('numberChips');
+  const operatorChips = document.getElementById('operatorChips');
+  const message = document.getElementById('message');
+  const parenPanel = document.getElementById('parenPanel');
+  const leftParenSpots = document.getElementById('leftParenSpots');
+  const rightParenSpots = document.getElementById('rightParenSpots');
+  const newBest = document.getElementById('newBest');
+
+  function absBig(n){ return n < 0n ? -n : n; }
+  function gcd(a,b){
+    a = absBig(a); b = absBig(b);
+    while(b !== 0n){ const t = a % b; a = b; b = t; }
+    return a === 0n ? 1n : a;
+  }
+  class Rat{
+    constructor(n,d=1n){
+      if(d===0n) throw new Error('0で割ることはできません。');
+      if(d<0n){n=-n;d=-d;}
+      const g=gcd(n,d);
+      this.n=n/g; this.d=d/g;
+    }
+    add(o){return new Rat(this.n*o.d+o.n*this.d,this.d*o.d)}
+    sub(o){return new Rat(this.n*o.d-o.n*this.d,this.d*o.d)}
+    mul(o){return new Rat(this.n*o.n,this.d*o.d)}
+    div(o){if(o.n===0n) throw new Error('0で割ることはできません。'); return new Rat(this.n*o.d,this.d*o.n)}
+    toNumber(){return Number(this.n)/Number(this.d)}
+    exact(){
+      if(this.d===1n) return this.n.toString();
+      return `${this.n}/${this.d}`;
+    }
+    display(){
+      if(this.d===1n) return this.n.toString();
+      const x=this.toNumber();
+      const rounded=Math.round(x*1e6)/1e6;
+      return `${this.exact()} ＝ ${rounded}`;
+    }
+  }
+
+  function precedence(op){ return (op==='*'||op==='/') ? 2 : 1; }
+  function applyOp(a,b,op){
+    if(op==='+') return a.add(b);
+    if(op==='-') return a.sub(b);
+    if(op==='*') return a.mul(b);
+    if(op==='/') return a.div(b);
+  }
+
+  function expressionTokens(){
+    const tokens=[];
+    for(let i=0;i<5;i++){
+      if(useParen && i===parenStart) tokens.push('(');
+      tokens.push(new Rat(BigInt(values[i])));
+      if(useParen && i===parenEnd) tokens.push(')');
+      if(i<4) tokens.push(ops[i]);
+    }
+    return tokens;
+  }
+
+  function evaluate(tokens){
+    const valStack=[], opStack=[];
+    const reduce=()=>{
+      const op=opStack.pop();
+      const b=valStack.pop(), a=valStack.pop();
+      if(!a || !b) throw new Error('式を正しく入力してください。');
+      valStack.push(applyOp(a,b,op));
+    };
+    for(const t of tokens){
+      if(t instanceof Rat) valStack.push(t);
+      else if(t==='(') opStack.push(t);
+      else if(t===')'){
+        while(opStack.length && opStack.at(-1)!=='(') reduce();
+        if(opStack.pop()!=='(') throw new Error('かっこの位置を確認してください。');
+      }else{
+        while(opStack.length && opStack.at(-1)!=='(' && precedence(opStack.at(-1))>=precedence(t)) reduce();
+        opStack.push(t);
+      }
+    }
+    while(opStack.length) reduce();
+    if(valStack.length!==1) throw new Error('式を正しく入力してください。');
+    return valStack[0];
+  }
+
+  function expressionText(){
+    let s='';
+    for(let i=0;i<5;i++){
+      if(useParen && i===parenStart) s+='（';
+      s+=String(values[i]);
+      if(useParen && i===parenEnd) s+='）';
+      if(i<4) s+=` ${opDisplay[ops[i]] ?? '?'} `;
+    }
+    return s;
+  }
+
+  function renderExpression(){
+    exprGrid.innerHTML='';
+    for(let i=0;i<9;i++){
+      const isNum=i%2===0;
+      const idx=Math.floor(i/2);
+      const wrap=document.createElement('div');
+      wrap.className='slot-wrap';
+
+      if(isNum && useParen && idx===parenStart){
+        const p=document.createElement('span');
+        p.className='paren-left'; p.textContent='（';
+        wrap.appendChild(p);
+      }
+      if(isNum && useParen && idx===parenEnd){
+        const p=document.createElement('span');
+        p.className='paren-right'; p.textContent='）';
+        wrap.appendChild(p);
+      }
+
+      const btn=document.createElement('button');
+      btn.className='slot '+(isNum?'num':'op');
+      const active = selectedType===(isNum?'number':'operator') && selectedIndex===idx;
+      if(active) btn.classList.add('selected');
+      btn.textContent=isNum ? (values[idx] ?? '〇') : (ops[idx] ? opDisplay[ops[idx]] : '□');
+      btn.setAttribute('aria-label',isNum?`数${idx+1}`:`記号${idx+1}`);
+      btn.onclick=()=>{
+        // 入力済みの欄をクリックしたら、その入力を取り消す
+        if(isNum && values[idx]!==null){
+          values[idx]=null;
+          selectedType='number';
+          selectedIndex=idx;
+          clearMsg();
+          renderAll();
+          return;
+        }
+        if(!isNum && ops[idx]!==null){
+          ops[idx]=null;
+          selectedType='operator';
+          selectedIndex=idx;
+          clearMsg();
+          renderAll();
+          return;
+        }
+
+        // 空欄をクリックした場合は、その場所を入力先として選択する
+        selectedType=isNum?'number':'operator';
+        selectedIndex=idx;
+        renderAll();
+      };
+      wrap.appendChild(btn);
+
+      const lab=document.createElement('div');
+      lab.className='slot-label';
+      lab.textContent=isNum?`数${idx+1}`:`記号${idx+1}`;
+      wrap.appendChild(lab);
+      exprGrid.appendChild(wrap);
+    }
+  }
+
+  function renderChips(){
+    numberChips.innerHTML='';
+    const used = new Set(values.filter(v=>v!==null));
+    numbers.forEach(n=>{
+      const b=document.createElement('button');
+      b.className='chip';
+      b.textContent=n;
+      const alreadyUsed=used.has(n) && values[selectedType==='number'?selectedIndex:-1]!==n;
+      b.disabled=alreadyUsed;
+      b.onclick=()=>{
+        if(selectedType!=='number'){
+          selectedType='number';
+          selectedIndex=values.findIndex(v=>v===null);
+          if(selectedIndex<0) selectedIndex=0;
+        }
+        values[selectedIndex]=n;
+        const next=values.findIndex((v,k)=>k>selectedIndex && v===null);
+        if(next>=0){ selectedIndex=next; selectedType='number'; }
+        else{
+          const nextOp=ops.findIndex(v=>v===null);
+          if(nextOp>=0){selectedType='operator';selectedIndex=nextOp;}
+        }
+        clearMsg(); renderAll();
+      };
+      numberChips.appendChild(b);
+    });
+
+    operatorChips.innerHTML='';
+    const usedOps = new Set(ops.filter(v=>v!==null));
+    operators.forEach(op=>{
+      const b=document.createElement('button');
+      b.className='chip';
+      b.textContent=opDisplay[op];
+      const alreadyUsed=usedOps.has(op) && ops[selectedType==='operator'?selectedIndex:-1]!==op;
+      b.disabled=alreadyUsed;
+      b.onclick=()=>{
+        if(selectedType!=='operator'){
+          selectedType='operator';
+          selectedIndex=ops.findIndex(v=>v===null);
+          if(selectedIndex<0) selectedIndex=0;
+        }
+        ops[selectedIndex]=op;
+        const next=ops.findIndex((v,k)=>k>selectedIndex && v===null);
+        if(next>=0){selectedIndex=next;selectedType='operator';}
+        else{
+          const nextNum=values.findIndex(v=>v===null);
+          if(nextNum>=0){selectedType='number';selectedIndex=nextNum;}
+        }
+        clearMsg(); renderAll();
+      };
+      operatorChips.appendChild(b);
+    });
+  }
+
+  function renderParenSpots(){
+    leftParenSpots.innerHTML='';
+    rightParenSpots.innerHTML='';
+
+    for(let i=0;i<5;i++){
+      const leftBtn=document.createElement('button');
+      leftBtn.className='spot-btn'+(i===parenStart?' active':'');
+      leftBtn.textContent=`数${i+1}の前`;
+      leftBtn.onclick=()=>{
+        parenStart=i;
+        if(parenStart>parenEnd){
+          parenEnd=parenStart;
+          setMsg('「（」が「）」より後ろにならないように、自動で位置を調整しました。','');
+        }else{
+          clearMsg();
+        }
+        renderAll();
+      };
+      leftParenSpots.appendChild(leftBtn);
+
+      const rightBtn=document.createElement('button');
+      rightBtn.className='spot-btn'+(i===parenEnd?' active':'');
+      rightBtn.textContent=`数${i+1}の後`;
+      rightBtn.onclick=()=>{
+        parenEnd=i;
+        if(parenStart>parenEnd){
+          parenStart=parenEnd;
+          setMsg('「）」が「（」より前にならないように、自動で位置を調整しました。','');
+        }else{
+          clearMsg();
+        }
+        renderAll();
+      };
+      rightParenSpots.appendChild(rightBtn);
+    }
+  }
+
+  function validate(){
+    if(values.some(v=>v===null)) return '5つの数をすべて入れてください。';
+    if(new Set(values).size!==5) return '同じ数は2回使えません。';
+    if(ops.some(v=>v===null)) return '4つの記号をすべて入れてください。';
+    if(new Set(ops).size!==4) return '＋、－、×、÷をそれぞれ1回ずつ使ってください。';
+    if(useParen && parenStart>parenEnd) return 'かっこの位置を確認してください。';
+    return null;
+  }
+
+  function calculate(){
+    const err=validate();
+    if(err){setMsg(err,'error');return;}
+    try{
+      const r=evaluate(expressionTokens());
+      const text=expressionText();
+      document.getElementById('currentResult').textContent=r.display();
+      document.getElementById('currentExpr').textContent=text;
+
+      attempts.push({
+        expr:text,
+        exact:r.exact(),
+        value:r.toNumber(),
+        display:r.display(),
+        mode:useParen?'かっこあり':'かっこなし'
+      });
+      attempts=attempts.slice(-40);
+      renderHistory();
+      const best=attempts.reduce((a,b)=>a.value>b.value?a:b);
+      const isBest = attempts.at(-1)===best || Math.abs(attempts.at(-1).value-best.value)<1e-12;
+      document.getElementById('bestResult').textContent=best.display;
+      document.getElementById('bestExpr').textContent=best.expr;
+      newBest.classList.toggle('show',isBest);
+      setMsg('記録しました。式を少し変えて、さらに大きくできるか試してみよう。','');
+      saveLocal();
+    }catch(e){
+      setMsg(e.message || '計算できませんでした。','error');
+    }
+  }
+
+  function renderHistory(){
+    const box=document.getElementById('history');
+    box.innerHTML='';
+    if(attempts.length===0){
+      const d=document.createElement('div'); d.className='empty';
+      d.textContent='まだ試行記録がありません。';
+      box.appendChild(d); return;
+    }
+    const bestVal=Math.max(...attempts.map(a=>a.value));
+    [...attempts].reverse().forEach((a,revIdx)=>{
+      const originalNo=attempts.length-revIdx;
+      const row=document.createElement('div');
+      row.className='attempt'+(Math.abs(a.value-bestVal)<1e-12?' best-attempt':'');
+      row.innerHTML=`
+        <div class="rank">${originalNo}</div>
+        <div>
+          <div class="formula">${escapeHtml(a.expr)}</div>
+          <div class="result-sub">${a.mode}</div>
+        </div>
+        <div class="score">${escapeHtml(a.display)}</div>`;
+      box.appendChild(row);
+    });
+  }
+
+  function randomize(){
+    const shuffled=[...numbers].sort(()=>Math.random()-.5);
+    values=shuffled.slice(0,5);
+    ops=[...operators].sort(()=>Math.random()-.5);
+    if(useParen){
+      parenStart=Math.floor(Math.random()*5);
+      parenEnd=parenStart+Math.floor(Math.random()*(5-parenStart));
+    }
+    selectedType='number'; selectedIndex=0;
+    clearMsg(); renderAll();
+  }
+
+  function clearExpression(){
+    values=[null,null,null,null,null];
+    ops=[null,null,null,null];
+    selectedType='number';selectedIndex=0;
+    document.getElementById('currentResult').textContent='―';
+    document.getElementById('currentExpr').textContent='式を完成させて計算してください';
+    newBest.classList.remove('show');
+    clearMsg();renderAll();
+  }
+
+  function setMode(paren){
+    useParen=paren;
+    document.getElementById('normalMode').classList.toggle('active',!paren);
+    document.getElementById('parenMode').classList.toggle('active',paren);
+    parenPanel.classList.toggle('show',paren);
+    clearExpression();
+  }
+
+  function setMsg(t,kind){message.textContent=t;message.className='message'+(kind?' '+kind:'')}
+  function clearMsg(){setMsg('','')}
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+  }
+
+  function saveLocal(){
+    try{
+      localStorage.setItem('expr-max-attempts',JSON.stringify(attempts));
+      localStorage.setItem('expr-max-memo1',document.getElementById('memo1').value);
+      localStorage.setItem('expr-max-memo2',document.getElementById('memo2').value);
+    }catch(e){}
+  }
+  function loadLocal(){
+    try{
+      attempts=JSON.parse(localStorage.getItem('expr-max-attempts')||'[]');
+      document.getElementById('memo1').value=localStorage.getItem('expr-max-memo1')||'';
+      document.getElementById('memo2').value=localStorage.getItem('expr-max-memo2')||'';
+      if(attempts.length){
+        const best=attempts.reduce((a,b)=>a.value>b.value?a:b);
+        document.getElementById('bestResult').textContent=best.display;
+        document.getElementById('bestExpr').textContent=best.expr;
+      }
+    }catch(e){attempts=[]}
+  }
+
+  function renderAll(){
+    renderExpression();
+    renderChips();
+    if(useParen) renderParenSpots();
+  }
+
+  document.getElementById('normalMode').onclick=()=>setMode(false);
+  document.getElementById('parenMode').onclick=()=>setMode(true);
+  document.getElementById('calcBtn').onclick=calculate;
+  document.getElementById('randomBtn').onclick=randomize;
+  document.getElementById('clearBtn').onclick=clearExpression;
+  document.getElementById('resetHistoryBtn').onclick=()=>{
+    attempts=[];
+    document.getElementById('bestResult').textContent='―';
+    document.getElementById('bestExpr').textContent='まだ記録がありません';
+    newBest.classList.remove('show');
+    renderHistory();saveLocal();
+    setMsg('試行記録を消しました。','');
+  };
+  document.getElementById('memo1').addEventListener('input',saveLocal);
+  document.getElementById('memo2').addEventListener('input',saveLocal);
+
+  loadLocal();
+  renderAll();
+  renderHistory();
+})();
+</script>
+</body>
+</html>
