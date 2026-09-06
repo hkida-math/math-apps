@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>くじ引きと2つの確率変数</title>
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --card:#fff;
+      --text:#1f2937;
+      --muted:#667085;
+      --line:#d9e0ea;
+      --accent:#2563eb;
+      --accent-soft:#eaf2ff;
+      --good:#157f3b;
+      --good-soft:#eaf8ef;
+      --joint:#7c3aed;
+      --joint-soft:#f2ecff;
+      --shadow:0 8px 24px rgba(31,41,55,.07);
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+      line-height:1.65;
+    }
+    button,input{font:inherit}
+    .wrap{
+      width:min(1120px,calc(100% - 28px));
+      margin:28px auto 54px;
+    }
+    .hero{
+      background:linear-gradient(135deg,#1e5fd8,#3b82f6);
+      color:white;
+      border-radius:22px;
+      padding:28px 30px;
+      box-shadow:var(--shadow);
+      margin-bottom:18px;
+    }
+    .hero h1{
+      margin:0 0 8px;
+      font-size:clamp(1.7rem,4vw,2.35rem);
+      line-height:1.3;
+    }
+    .hero p{margin:0;opacity:.96}
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:18px;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid #e8ebf0;
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:20px;
+    }
+    .card.full{grid-column:1/-1}
+    .card h2{
+      margin:0 0 12px;
+      font-size:1.2rem;
+    }
+    .sub{
+      margin:-5px 0 14px;
+      color:var(--muted);
+      font-size:.93rem;
+    }
+    .problem{
+      border-left:5px solid var(--accent);
+      background:#f8fafc;
+      border-radius:12px;
+      padding:15px 16px;
+      font-size:1.02rem;
+    }
+    .problem p{margin:0}
+    .controls{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
+    }
+    .control{
+      background:#fbfcfe;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:14px;
+    }
+    .control label{
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap:10px;
+      font-weight:700;
+      margin-bottom:8px;
+    }
+    .number-entry{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      justify-content:flex-start;
+    }
+    .number-box{
+      width:88px;
+      height:52px;
+      border:2px solid #b8c4d6;
+      border-radius:10px;
+      background:#fff;
+      color:var(--text);
+      font-size:1.35rem;
+      font-weight:800;
+      text-align:center;
+      padding:6px 8px;
+    }
+    .number-box:focus{
+      outline:none;
+      border-color:var(--accent);
+      box-shadow:0 0 0 3px rgba(37,99,235,.12);
+    }
+    .number-entry span{
+      font-size:1.05rem;
+      font-weight:700;
+    }
+    .input-message{
+      margin-top:10px;
+      min-height:1.4em;
+      color:#b42318;
+      font-weight:700;
+    }
+    .ticket-summary{
+      margin-top:14px;
+      padding:11px 13px;
+      border-radius:10px;
+      background:var(--accent-soft);
+      color:#174ea6;
+      font-weight:650;
+    }
+    .dist-pair{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
+    }
+    .mini-title{
+      margin:0 0 8px;
+      font-size:1.04rem;
+    }
+    .table-wrap{overflow-x:auto}
+    table{
+      width:100%;
+      border-collapse:collapse;
+    }
+    th,td{
+      border:1px solid var(--line);
+      padding:9px 8px;
+      text-align:center;
+      vertical-align:middle;
+    }
+    th{
+      background:#f8fafc;
+      font-weight:750;
+    }
+    .joint-table th:first-child{
+      background:var(--joint-soft);
+      color:#5b21b6;
+    }
+    .joint-cell{
+      font-weight:700;
+      min-width:70px;
+      transition:background .2s ease;
+    }
+
+    .total-cell{
+      background:#eef4ff !important;
+      color:#174ea6;
+      font-weight:800;
+    }
+    .grand-total-cell{
+      background:#eaf8ef !important;
+      color:#157f3b;
+      font-weight:850;
+    }
+
+    .chart{
+      display:flex;
+      align-items:flex-end;
+      gap:10px;
+      min-height:205px;
+      padding:18px 10px 8px;
+      border-left:1px solid var(--line);
+      border-bottom:1px solid var(--line);
+      overflow-x:auto;
+      margin-top:12px;
+    }
+    .bar-item{
+      flex:1 0 54px;
+      min-width:54px;
+      text-align:center;
+    }
+    .bar-value{
+      min-height:23px;
+      font-size:.84rem;
+      color:var(--muted);
+      font-weight:650;
+    }
+    .bar-box{
+      height:135px;
+      display:flex;
+      align-items:flex-end;
+      justify-content:center;
+    }
+    .bar{
+      width:64%;
+      min-width:28px;
+      background:linear-gradient(#4f8ff7,#2563eb);
+      border-radius:7px 7px 0 0;
+      transition:height .25s ease;
+    }
+    .bar.joint-sum{
+      background:linear-gradient(#9f7aea,#7c3aed);
+    }
+    .bar-label{
+      margin-top:5px;
+      font-weight:750;
+    }
+    .metrics{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:10px;
+    }
+    .metric{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:14px 10px;
+      text-align:center;
+      background:#fbfcfe;
+    }
+    .metric .label{
+      color:var(--muted);
+      font-size:.88rem;
+    }
+    .metric .value{
+      margin-top:3px;
+      font-size:1.3rem;
+      font-weight:850;
+    }
+    .metric.highlight{
+      background:var(--good-soft);
+      border-color:#b7e4c4;
+    }
+    .relation{
+      margin-top:12px;
+      border-radius:10px;
+      padding:10px 12px;
+      background:var(--good-soft);
+      color:var(--good);
+      font-weight:700;
+      text-align:center;
+    }
+    .possible{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:.92rem;
+    }
+    .question-box{
+      background:#f8fafc;
+      border:1px solid var(--line);
+      border-left:5px solid var(--accent);
+      border-radius:12px;
+      padding:14px 16px;
+    }
+    .question-box p{margin:6px 0}
+    .footer{
+      margin-top:18px;
+      color:var(--muted);
+      text-align:center;
+      font-size:.86rem;
+    }
+    @media(max-width:820px){
+      .grid{grid-template-columns:1fr}
+      .card.full{grid-column:auto}
+      .dist-pair{grid-template-columns:1fr}
+      .metrics{grid-template-columns:1fr 1fr}
+    }
+    @media(max-width:540px){
+      .wrap{width:min(100% - 18px,1120px);margin-top:10px}
+      .hero{padding:22px 18px;border-radius:16px}
+      .card{padding:16px}
+      .controls{grid-template-columns:1fr}
+      .metrics{grid-template-columns:1fr 1fr}
+      th,td{padding:8px 6px}
+    }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <h1>くじ引きと2つの確率変数</h1>
+    <p>引く本数を変えながら，X，Y，同時分布，X+Y の期待値がどう変わるか調べよう。</p>
+  </section>
+
+  <section class="grid">
+    <article class="card full">
+      <div class="problem">
+        <p>
+          2本の当たりくじを含む10本のくじがある。まずAさんがくじを引き，残りのくじからBさんがくじを引く。
+          Aさん，Bさんの当たりくじの本数を，それぞれ X，Y とする。
+          Aさん，Bさんの引く本数をいろいろ変えて，X，Y のそれぞれの分布，X と Y の同時分布がどのようになるか調べてみよう。
+        </p>
+      </div>
+    </article>
+
+    <article class="card full">
+      <h2>1．引く本数を変える</h2>
+      <p class="sub">Aさんが先に引き，くじは戻しません。Bさんは残ったくじから引きます。</p>
+      <div class="controls">
+        <div class="control">
+          <label for="aInput">
+            <span>Aさんが引く本数</span>
+          </label>
+          <div class="number-entry">
+            <input id="aInput" class="number-box" type="number" min="1" max="9" value="1" step="1" inputmode="numeric">
+            <span>本</span>
+          </div>
+        </div>
+        <div class="control">
+          <label for="bInput">
+            <span>Bさんが引く本数</span>
+          </label>
+          <div class="number-entry">
+            <input id="bInput" class="number-box" type="number" min="1" max="9" value="2" step="1" inputmode="numeric">
+            <span>本</span>
+          </div>
+        </div>
+      </div>
+      <div id="inputMessage" class="input-message"></div>
+      <div id="ticketSummary" class="ticket-summary"></div>
+    </article>
+
+    <article class="card full">
+      <h2>2．X と Y の確率分布</h2>
+      <p class="sub">引く本数を変えると，X，Y のとりうる値と確率分布が変化します。各確率の合計が1になることも確認しよう。</p>
+      <div class="dist-pair">
+        <div>
+          <h3 class="mini-title">X：Aさんが引いた当たりくじの本数</h3>
+          <div id="xTable" class="table-wrap"></div>
+          <div id="xChart" class="chart"></div>
+          <div id="xPossible" class="possible"></div>
+        </div>
+        <div>
+          <h3 class="mini-title">Y：Bさんが引いた当たりくじの本数</h3>
+          <div id="yTable" class="table-wrap"></div>
+          <div id="yChart" class="chart"></div>
+          <div id="yPossible" class="possible"></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="card full">
+      <h2>3．X と Y の同時分布</h2>
+      <p class="sub">各マスは P(X=x, Y=y) です。右端と下端の「計」は周辺分布を表し，全体の確率の合計は1になります。</p>
+      <div id="jointTable" class="table-wrap"></div>
+    </article>
+
+    <article class="card full">
+      <h2>4．X + Y の確率分布</h2>
+      <p class="sub">AさんとBさんが合わせて引いた当たりくじの本数です。</p>
+      <div id="sumTable" class="table-wrap"></div>
+      <div id="sumChart" class="chart"></div>
+    </article>
+
+    <article class="card full">
+      <h2>5．期待値を比べる</h2>
+      <div class="metrics">
+        <div class="metric">
+          <div class="label">E(X)</div>
+          <div class="value" id="ex">—</div>
+        </div>
+        <div class="metric">
+          <div class="label">E(Y)</div>
+          <div class="value" id="ey">—</div>
+        </div>
+        <div class="metric">
+          <div class="label">E(X)+E(Y)</div>
+          <div class="value" id="exey">—</div>
+        </div>
+        <div class="metric highlight">
+          <div class="label">E(X+Y)</div>
+          <div class="value" id="esum">—</div>
+        </div>
+      </div>
+      <div class="relation" id="relation"></div>
+    </article>
+
+    <article class="card full">
+      <h2>調べてみよう</h2>
+      <div class="question-box">
+        <p>① Aさんが引く本数を増やすと，X の確率分布はどう変わるだろうか。</p>
+        <p>② Bさんが引く本数を変えると，同時分布のどの部分が変わるだろうか。</p>
+        <p>③ AさんとBさんが引く本数の合計が同じなら，E(X+Y) はどうなるだろうか。</p>
+        <p>④ AさんとBさんの引く本数を入れ替えると，X，Y，同時分布にはどんな関係が見られるだろうか。</p>
+      </div>
+    </article>
+  </section>
+
+</main>
+
+<script>
+  const TOTAL = 10;
+  const WIN = 2;
+
+  const aInput = document.getElementById("aInput");
+  const bInput = document.getElementById("bInput");
+
+  function gcd(a,b){
+    a=Math.abs(a); b=Math.abs(b);
+    while(b!==0){ const t=b; b=a%b; a=t; }
+    return a;
+  }
+
+  function fraction(num, den){
+    if(den===0) return "—";
+    if(num===0) return "0";
+    const sign = den < 0 ? -1 : 1;
+    num *= sign; den *= sign;
+    const g=gcd(num,den);
+    num/=g; den/=g;
+    return den===1 ? String(num) : `${num}/${den}`;
+  }
+
+  function comb(n,r){
+    if(r<0 || r>n || n<0) return 0;
+    r=Math.min(r,n-r);
+    let result=1;
+    for(let i=1;i<=r;i++){
+      result = result*(n-r+i)/i;
+    }
+    return Math.round(result);
+  }
+
+  function possibleValues(n){
+    const lo=Math.max(0,n-(TOTAL-WIN));
+    const hi=Math.min(WIN,n);
+    const arr=[];
+    for(let k=lo;k<=hi;k++) arr.push(k);
+    return arr;
+  }
+
+  function hypergeomCounts(n){
+    const values=possibleValues(n);
+    const den=comb(TOTAL,n);
+    const counts=values.map(k=>comb(WIN,k)*comb(TOTAL-WIN,n-k));
+    return {values,counts,den};
+  }
+
+  function jointCount(a,b,x,y){
+    // Aがx本当たりを引いた後，残りからBがy本当たりを引く場合の組合せ数。
+    const aWays = comb(WIN,x)*comb(TOTAL-WIN,a-x);
+    const remainWin = WIN-x;
+    const remainLose = (TOTAL-WIN)-(a-x);
+    const bWays = comb(remainWin,y)*comb(remainLose,b-y);
+    return aWays*bWays;
+  }
+
+  function jointDen(a,b){
+    return comb(TOTAL,a)*comb(TOTAL-a,b);
+  }
+
+  function makeDistTable(symbol, values, counts, den){
+    let html='<table><tr><th>'+symbol+'</th>';
+    values.forEach(v=>html+=`<th>${v}</th>`);
+    html+='<th>計</th>';
+    html+='</tr><tr><th>確率</th>';
+    counts.forEach(c=>html+=`<td>${fraction(c,den)}</td>`);
+    const totalCount=counts.reduce((s,c)=>s+c,0);
+    html+=`<td class="total-cell">${fraction(totalCount,den)}</td>`;
+    html+='</tr></table>';
+    return html;
+  }
+
+  function renderBarChart(targetId, values, counts, den, extraClass=""){
+    const target=document.getElementById(targetId);
+    target.innerHTML="";
+    const probs=counts.map(c=>c/den);
+    const maxP=Math.max(...probs,1e-12);
+
+    values.forEach((v,i)=>{
+      const item=document.createElement("div");
+      item.className="bar-item";
+
+      const val=document.createElement("div");
+      val.className="bar-value";
+      val.textContent=fraction(counts[i],den);
+
+      const box=document.createElement("div");
+      box.className="bar-box";
+
+      const bar=document.createElement("div");
+      bar.className="bar "+extraClass;
+      bar.style.height=`${(probs[i]/maxP)*100}%`;
+
+      const label=document.createElement("div");
+      label.className="bar-label";
+      label.textContent=v;
+
+      box.appendChild(bar);
+      item.appendChild(val);
+      item.appendChild(box);
+      item.appendChild(label);
+      target.appendChild(item);
+    });
+  }
+
+  function expectationNumerator(values,counts){
+    return values.reduce((s,v,i)=>s+v*counts[i],0);
+  }
+
+  function renderJoint(a,b){
+    const xVals=possibleValues(a);
+    const yVals=possibleValues(b);
+    const den=jointDen(a,b);
+
+    let maxCount=0;
+    const matrix=xVals.map(x=>yVals.map(y=>{
+      const c=jointCount(a,b,x,y);
+      maxCount=Math.max(maxCount,c);
+      return c;
+    }));
+
+    const rowTotals=matrix.map(row=>row.reduce((s,c)=>s+c,0));
+    const colTotals=yVals.map((_,j)=>matrix.reduce((s,row)=>s+row[j],0));
+    const grandTotal=rowTotals.reduce((s,c)=>s+c,0);
+
+    let html='<table class="joint-table"><tr><th>X ＼ Y</th>';
+    yVals.forEach(y=>html+=`<th>${y}</th>`);
+    html+='<th>計</th>';
+    html+='</tr>';
+
+    xVals.forEach((x,i)=>{
+      html+=`<tr><th>${x}</th>`;
+      yVals.forEach((y,j)=>{
+        const c=matrix[i][j];
+        const alpha=maxCount===0?0:(c/maxCount)*0.20;
+        const bg=c===0?'#fff':`rgba(124,58,237,${0.05+alpha})`;
+        html+=`<td class="joint-cell" style="background:${bg}">${fraction(c,den)}</td>`;
+      });
+      html+=`<td class="total-cell">${fraction(rowTotals[i],den)}</td>`;
+      html+='</tr>';
+    });
+
+    html+='<tr><th>計</th>';
+    colTotals.forEach(c=>{
+      html+=`<td class="total-cell">${fraction(c,den)}</td>`;
+    });
+    html+=`<td class="grand-total-cell">${fraction(grandTotal,den)}</td>`;
+    html+='</tr>';
+
+    html+='</table>';
+    document.getElementById("jointTable").innerHTML=html;
+
+    return {xVals,yVals,matrix,den};
+  }
+
+  function renderSum(a,b,joint){
+    const values=[0,1,2];
+    const counts=[0,0,0];
+
+    joint.xVals.forEach((x,i)=>{
+      joint.yVals.forEach((y,j)=>{
+        const s=x+y;
+        if(s>=0 && s<=2) counts[s]+=joint.matrix[i][j];
+      });
+    });
+
+    // 0確率しかない端の値は表示から除く
+    const keep=values.filter((v,i)=>counts[i]>0);
+    const keepCounts=keep.map(v=>counts[v]);
+
+    document.getElementById("sumTable").innerHTML=
+      makeDistTable("X+Y",keep,keepCounts,joint.den);
+    renderBarChart("sumChart",keep,keepCounts,joint.den,"joint-sum");
+
+    return {values:keep,counts:keepCounts,den:joint.den};
+  }
+
+  function update(){
+    const a=Number(aInput.value);
+    const b=Number(bInput.value);
+    const msg=document.getElementById("inputMessage");
+
+    const validInteger = Number.isInteger(a) && Number.isInteger(b);
+    const validRange = a>=1 && b>=1 && a<=9 && b<=9;
+    const validTotal = a+b<=TOTAL;
+
+    if(!validInteger || !validRange || !validTotal){
+      let text="";
+      if(!validInteger){
+        text="1以上の整数を入力してください。";
+      }else if(!validRange){
+        text="Aさん，Bさんともに1本以上9本以下で入力してください。";
+      }else if(!validTotal){
+        text="AさんとBさんが引く本数の合計は10本以下にしてください。";
+      }
+      msg.textContent=text;
+      document.getElementById("ticketSummary").textContent="入力条件を確認してください。";
+      return;
+    }
+
+    msg.textContent="";
+    document.getElementById("ticketSummary").textContent=
+      `Aさんが ${a} 本引いた後，残り ${TOTAL-a} 本からBさんが ${b} 本引きます。2人で合わせて ${a+b} 本引きます。`;
+
+    const x=hypergeomCounts(a);
+    const y=hypergeomCounts(b);
+
+    document.getElementById("xTable").innerHTML=
+      makeDistTable("X",x.values,x.counts,x.den);
+    document.getElementById("yTable").innerHTML=
+      makeDistTable("Y",y.values,y.counts,y.den);
+
+    renderBarChart("xChart",x.values,x.counts,x.den);
+    renderBarChart("yChart",y.values,y.counts,y.den);
+
+    document.getElementById("xPossible").textContent=
+      `X のとりうる値：${x.values.join("，")}`;
+    document.getElementById("yPossible").textContent=
+      `Y のとりうる値：${y.values.join("，")}`;
+
+    const joint=renderJoint(a,b);
+    const sum=renderSum(a,b,joint);
+
+    const exNum=expectationNumerator(x.values,x.counts);
+    const eyNum=expectationNumerator(y.values,y.counts);
+    const esNum=expectationNumerator(sum.values,sum.counts);
+
+    document.getElementById("ex").textContent=fraction(exNum,x.den);
+    document.getElementById("ey").textContent=fraction(eyNum,y.den);
+    document.getElementById("exey").textContent=
+      fraction(exNum*y.den + eyNum*x.den, x.den*y.den);
+    document.getElementById("esum").textContent=fraction(esNum,sum.den);
+
+    document.getElementById("relation").textContent=
+      `E(X+Y) = E(X) + E(Y) = ${fraction(esNum,sum.den)}`;
+  }
+
+  aInput.addEventListener("input",update);
+  bInput.addEventListener("input",update);
+  aInput.addEventListener("change",update);
+  bInput.addEventListener("change",update);
+
+  update();
+</script>
+</body>
+</html>
