@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>弧の長さから sinθ のグラフへ</title>
+<style>
+  :root{
+    --bg:#f7f8fb; --panel:#fff; --ink:#172033; --muted:#687386; --grid:#dfe4ec;
+    --axis:#2e3748; --length:#d94343; --sin:#2463eb; --guide:#758195;
+    --theta:#0f9d76; --p:#d73555; --aux:#f1c9c9; --thetaAux:#cfeee5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP","Yu Gothic",sans-serif}
+  .wrap{max-width:1660px;margin:0 auto;padding:18px}
+  h1{font-size:clamp(20px,3vw,30px);margin:0 0 10px}
+  .card{background:var(--panel);border-radius:18px;overflow:hidden;border:1px solid #e8ebf1;box-shadow:0 4px 22px #1b274014}
+  svg{display:block;width:100%;height:auto;min-height:430px}
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 16px 18px;border-top:1px solid #edf0f5}
+  button{border:0;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer;background:#172033;color:#fff}
+  button.secondary{background:#e9edf5;color:#172033}
+  .sliderWrap{display:flex;align-items:center;gap:10px;flex:1;min-width:260px}
+  input[type=range]{width:100%}
+  .readout{min-width:170px;font-variant-numeric:tabular-nums;font-weight:700}
+  .label{font-weight:700}
+  .small{font-size:13px}
+  @media(max-width:720px){.wrap{padding:10px}svg{min-height:620px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>弧の長さから <i>y</i> = sinθ のグラフへ</h1>
+
+  <div class="card">
+    <svg id="svg" viewBox="0 0 1600 540" role="img" aria-label="単位円とサインのグラフのアニメーション">
+      <text x="165" y="36" text-anchor="middle" class="label" font-size="18">単位円</text>
+      <text x="1010" y="36" text-anchor="middle" class="label" font-size="18">弧の長さを θ 軸にとる</text>
+
+      <line x1="35" y1="225" x2="295" y2="225" stroke="var(--grid)" stroke-width="1.5"/>
+      <line x1="165" y1="85" x2="165" y2="365" stroke="var(--grid)" stroke-width="1.5"/>
+
+      <circle cx="165" cy="225" r="86" fill="none" stroke="var(--axis)" stroke-width="2.5"/>
+      <circle id="auxRing1" cx="165" cy="225" r="100" fill="none" stroke="var(--aux)" stroke-width="2" stroke-dasharray="4 5" opacity="0"/>
+      <circle id="thetaRing2" cx="165" cy="225" r="44" fill="none" stroke="var(--thetaAux)" stroke-width="1.5" stroke-dasharray="4 5" opacity="0"/>
+
+      <!-- 単位円の ±1 表示 -->
+      <text x="258" y="217" class="small">1</text>
+      <text x="55" y="217" class="small">-1</text>
+      <text x="172" y="134" class="small">1</text>
+      <text x="172" y="322" class="small">-1</text>
+      <text x="170" y="242" class="small">O</text>
+
+      <line id="radius" x1="165" y1="225" x2="251" y2="225" stroke="var(--guide)" stroke-width="2"/>
+      <path id="arc" d="" fill="none" stroke="var(--length)" stroke-width="7" stroke-linecap="round"/>
+
+      <path id="thetaArc1" d="" fill="none" stroke="var(--theta)" stroke-width="3.8" stroke-linecap="round"/>
+      <path id="thetaArc2" d="" fill="none" stroke="var(--theta)" stroke-width="3.8" stroke-linecap="round"/>
+
+      <circle id="P" cx="251" cy="225" r="7" fill="var(--p)"/>
+      <text id="Plabel" x="262" y="214" class="label" font-size="16">P</text>
+
+      <text id="thetaCircle" x="205" y="208" fill="var(--theta)" class="label" font-size="16">θ</text>
+
+      <line id="circleYguide" x1="251" y1="225" x2="251" y2="225" stroke="var(--sin)" stroke-width="2" stroke-dasharray="5 5"/>
+      <text id="sinLabelCircle" x="265" y="225" fill="var(--sin)" class="small">sin θ</text>
+
+      <rect x="30" y="392" width="300" height="110" rx="13" fill="#f3f6fa" stroke="#e0e5ec"/>
+      <text x="180" y="422" text-anchor="middle" font-size="15" class="label">半径 r = 1</text>
+      <text x="180" y="452" text-anchor="middle" font-size="18">弧の長さ <tspan fill="var(--length)" font-weight="700">s</tspan> = rθ = θ</text>
+      <text id="arcReadout" x="180" y="480" text-anchor="middle" font-size="15" fill="var(--muted)">s = 0.00</text>
+
+      <line x1="390" y1="225" x2="1535" y2="225" stroke="var(--axis)" stroke-width="2"/>
+      <line x1="420" y1="95" x2="420" y2="360" stroke="var(--axis)" stroke-width="2"/>
+      <polygon points="1535,225 1523,219 1523,231" fill="var(--axis)"/>
+      <polygon points="420,95 414,107 426,107" fill="var(--axis)"/>
+      <text x="1538" y="248" font-size="16">θ</text>
+      <text x="400" y="98" font-size="16">y</text>
+
+      <g id="ticks"></g>
+
+      <line id="thetaSegment" x1="420" y1="225" x2="420" y2="225" stroke="var(--length)" stroke-width="8" stroke-linecap="round"/>
+      <text id="thetaSegmentLabel" x="420" y="273" text-anchor="middle" fill="var(--length)" class="label" font-size="15">0</text>
+
+      <path id="sinePath" d="" fill="none" stroke="var(--sin)" stroke-width="4" stroke-linecap="round"/>
+      <circle id="G" cx="420" cy="225" r="6.5" fill="var(--p)"/>
+      <line id="verticalGuide" x1="420" y1="225" x2="420" y2="225" stroke="var(--guide)" stroke-width="1.5" stroke-dasharray="5 5"/>
+      <line id="horizontalGuide" x1="420" y1="225" x2="420" y2="225" stroke="var(--guide)" stroke-width="1.5" stroke-dasharray="5 5"/>
+      <line id="transfer" x1="251" y1="225" x2="420" y2="225" stroke="var(--length)" stroke-width="2.2" stroke-dasharray="6 5"/>
+
+      <rect x="560" y="392" width="760" height="110" rx="13" fill="#f8fafc" stroke="#e0e5ec"/>
+      <text id="dynamicFormula" x="940" y="454" text-anchor="middle" font-size="21" class="label">θ = 0.00 rad　→　(θ, sin θ) = (0.00, 0.00)</text>
+    </svg>
+
+    <div class="controls">
+      <button id="play">▶ 再生</button>
+      <button id="reset" class="secondary">↺ はじめから</button>
+      <div class="sliderWrap">
+        <input id="slider" type="range" min="0" max="12566" value="0" step="1" aria-label="theta">
+        <div id="readout" class="readout">θ = 0.00 rad</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const NS="http://www.w3.org/2000/svg";
+  const cx=165, cy=225, R=86;
+  const gx=420, gy=225;
+  const xScale=R, yScale=R;
+  const maxTheta=4*Math.PI;
+  const redTurnGap=14;
+
+  const thetaR1 = 32;
+  const thetaR2 = 44;
+
+  const $=id=>document.getElementById(id);
+  const radius=$("radius"), arc=$("arc"), P=$("P"), Plabel=$("Plabel");
+  const thetaArc1=$("thetaArc1"), thetaArc2=$("thetaArc2"), thetaCircle=$("thetaCircle");
+  const circleYguide=$("circleYguide"), sinLabelCircle=$("sinLabelCircle");
+  const thetaSegment=$("thetaSegment"), thetaSegmentLabel=$("thetaSegmentLabel");
+  const sinePath=$("sinePath"), G=$("G"), verticalGuide=$("verticalGuide"), horizontalGuide=$("horizontalGuide");
+  const transfer=$("transfer");
+  const dynamicFormula=$("dynamicFormula"), arcReadout=$("arcReadout");
+  const slider=$("slider"), play=$("play"), reset=$("reset"), readout=$("readout");
+  const ticks=$("ticks");
+  const auxRing1=$("auxRing1"), thetaRing2=$("thetaRing2");
+
+  function addText(x,y,text,anchor="middle"){
+    const t=document.createElementNS(NS,"text");
+    t.setAttribute("x",x); t.setAttribute("y",y);
+    t.setAttribute("text-anchor",anchor);
+    t.setAttribute("font-size","13");
+    t.setAttribute("fill","#687386");
+    t.textContent=text;
+    ticks.appendChild(t);
+  }
+
+  function addLine(x1,y1,x2,y2){
+    const l=document.createElementNS(NS,"line");
+    l.setAttribute("x1",x1); l.setAttribute("y1",y1);
+    l.setAttribute("x2",x2); l.setAttribute("y2",y2);
+    l.setAttribute("stroke","#cfd6e0");
+    l.setAttribute("stroke-width","1.2");
+    ticks.appendChild(l);
+  }
+
+  const tickData = [
+    [0, "0"], [Math.PI/2, "π/2"], [Math.PI, "π"], [3*Math.PI/2, "3π/2"],
+    [2*Math.PI, "2π"], [5*Math.PI/2, "5π/2"], [3*Math.PI, "3π"],
+    [7*Math.PI/2, "7π/2"], [4*Math.PI, "4π"]
+  ];
+
+  tickData.forEach(([v,label])=>{
+    const x = gx + xScale*v;
+    addLine(x,219,x,231);
+    addText(x,252,label);
+  });
+
+  addLine(gx-6, gy-yScale, gx+6, gy-yScale);
+  addText(gx-12, gy-yScale+4, "1", "end");
+  addLine(gx-6, gy+yScale, gx+6, gy+yScale);
+  addText(gx-12, gy+yScale+4, "−1", "end");
+
+  function polar(theta, rad){
+    return [cx + rad*Math.cos(theta), cy - rad*Math.sin(theta)];
+  }
+
+  function arcSegment(start, end, rad){
+    if(end <= start + 1e-8) return "";
+    const step = Math.PI * 0.98;
+    let d = "";
+    let a = start;
+    let first = true;
+    while(a < end - 1e-8){
+      const b = Math.min(a + step, end);
+      const [sx, sy] = polar(a, rad);
+      const [ex, ey] = polar(b, rad);
+      const large = (b-a) > Math.PI ? 1 : 0;
+      if(first){ d += `M ${sx} ${sy} `; first = false; }
+      d += `A ${rad} ${rad} 0 ${large} 0 ${ex} ${ey} `;
+      a = b;
+    }
+    return d.trim();
+  }
+
+  function cumulativeArcPath(theta, baseRadius, gap){
+    if(theta <= 0.00001) return "";
+    let d = "", remain = theta, turn = 0;
+    while(remain > 1e-8){
+      const span = Math.min(remain, 2*Math.PI);
+      const rad = baseRadius + turn*gap;
+      d += arcSegment(0, span, rad) + " ";
+      remain -= span;
+      turn += 1;
+    }
+    return d.trim();
+  }
+
+  function sineTrace(theta){
+    if(theta <= 0) return "";
+    const n = Math.max(2, Math.ceil(theta/0.025));
+    let d = "";
+    for(let i=0;i<=n;i++){
+      const t = theta*i/n;
+      const x = gx + xScale*t;
+      const y = gy - yScale*Math.sin(t);
+      d += (i===0 ? "M" : " L") + x.toFixed(2) + " " + y.toFixed(2);
+    }
+    return d;
+  }
+
+  function setThetaArcs(theta){
+    if(theta <= 2*Math.PI){
+      thetaArc1.setAttribute("d", arcSegment(0, theta, thetaR1));
+      thetaArc2.setAttribute("d", "");
+    } else {
+      thetaArc1.setAttribute("d", arcSegment(0, 2*Math.PI, thetaR1));
+      thetaArc2.setAttribute("d", arcSegment(0, theta - 2*Math.PI, thetaR2));
+    }
+  }
+
+  function update(theta){
+    theta = Math.max(0, Math.min(maxTheta, theta));
+    const [px,py] = polar(theta, R);
+    const graphX = gx + xScale*theta;
+    const graphY = gy - yScale*Math.sin(theta);
+
+    radius.setAttribute("x2", px);
+    radius.setAttribute("y2", py);
+    P.setAttribute("cx", px);
+    P.setAttribute("cy", py);
+    Plabel.setAttribute("x", px+11);
+    Plabel.setAttribute("y", py-10);
+
+    arc.setAttribute("d", cumulativeArcPath(theta, R, redTurnGap));
+    setThetaArcs(theta);
+
+    const thetaMod = theta % (2*Math.PI);
+    const labelTheta = Math.min((thetaMod || 0.05)/2, 1.15);
+    const activeThetaRadius = theta <= 2*Math.PI ? thetaR1 : thetaR2;
+    const [tx,ty] = polar(labelTheta, activeThetaRadius + 10);
+    thetaCircle.setAttribute("x", tx);
+    thetaCircle.setAttribute("y", ty);
+
+    circleYguide.setAttribute("x1", px);
+    circleYguide.setAttribute("x2", px);
+    circleYguide.setAttribute("y1", cy);
+    circleYguide.setAttribute("y2", py);
+    sinLabelCircle.setAttribute("x", px+10);
+    sinLabelCircle.setAttribute("y", (cy+py)/2 - 5);
+
+    thetaSegment.setAttribute("x2", graphX);
+    thetaSegmentLabel.setAttribute("x", graphX);
+    thetaSegmentLabel.textContent = `θ = ${theta.toFixed(2)}`;
+
+    sinePath.setAttribute("d", sineTrace(theta));
+    G.setAttribute("cx", graphX);
+    G.setAttribute("cy", graphY);
+
+    verticalGuide.setAttribute("x1", graphX);
+    verticalGuide.setAttribute("x2", graphX);
+    verticalGuide.setAttribute("y1", gy);
+    verticalGuide.setAttribute("y2", graphY);
+
+    horizontalGuide.setAttribute("x1", gx);
+    horizontalGuide.setAttribute("x2", graphX);
+    horizontalGuide.setAttribute("y1", graphY);
+    horizontalGuide.setAttribute("y2", graphY);
+
+    transfer.setAttribute("x1", px);
+    transfer.setAttribute("y1", py);
+    transfer.setAttribute("x2", graphX);
+    transfer.setAttribute("y2", graphY);
+
+    auxRing1.setAttribute("opacity", theta > 2*Math.PI ? "1" : "0");
+    thetaRing2.setAttribute("opacity", theta > 2*Math.PI ? "1" : "0");
+
+    arcReadout.textContent = `s = ${theta.toFixed(2)}`;
+    dynamicFormula.textContent = `θ = ${theta.toFixed(2)} rad　→　(θ, sin θ) = (${theta.toFixed(2)}, ${Math.sin(theta).toFixed(2)})`;
+    readout.textContent = `θ = ${theta.toFixed(2)} rad`;
+    slider.value = Math.round(theta*1000);
+  }
+
+  let theta = 0, running = false, last = null;
+
+  function frame(ts){
+    if(!running) return;
+    if(last == null) last = ts;
+    const dt = (ts - last)/1000;
+    last = ts;
+    theta += dt * 0.75;
+    if(theta >= maxTheta){
+      theta = maxTheta;
+      running = false;
+      play.textContent = "▶ 再生";
+      last = null;
+    }
+    update(theta);
+    if(running) requestAnimationFrame(frame);
+  }
+
+  play.addEventListener("click",()=>{
+    running = !running;
+    play.textContent = running ? "⏸ 一時停止" : "▶ 再生";
+    if(running){
+      if(theta >= maxTheta) theta = 0;
+      last = null;
+      requestAnimationFrame(frame);
+    }
+  });
+
+  reset.addEventListener("click",()=>{
+    running = false;
+    last = null;
+    theta = 0;
+    play.textContent = "▶ 再生";
+    update(theta);
+  });
+
+  slider.addEventListener("input",()=>{
+    running = false;
+    last = null;
+    play.textContent = "▶ 再生";
+    theta = Number(slider.value)/1000;
+    update(theta);
+  });
+
+  update(0);
+})();
+</script>
+</body>
+</html>
