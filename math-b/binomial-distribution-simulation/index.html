@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>二項分布シミュレーター（独立パラメータ版）</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .chart-section { margin-bottom: 50px; padding-bottom: 30px; border-bottom: 2px dashed #ccc; }
+        /* グラフ①用のスライダー背景（青系） */
+        .slider-box-1 { margin: 15px 0; padding: 15px; background: #f0f8ff; border: 1px solid #b3d4fc; border-radius: 8px; }
+        /* グラフ②用のスライダー背景（緑系） */
+        .slider-box-2 { margin: 15px 0; padding: 15px; background: #f4fdf4; border: 1px solid #bce8bc; border-radius: 8px; }
+        input[type="range"] { width: 100%; }
+        label { font-weight: bold; }
+        h2 { font-size: 1.3rem; margin-bottom: 5px; }
+        p { font-size: 0.9rem; color: #555; margin-top: 0; }
+    </style>
+</head>
+<body>
+
+    <!-- ================= グラフ①の領域 ================= -->
+    <div class="chart-section">
+        <h2>① 横軸自動調整バージョン</h2>
+        <p>※ 分布の「形」の変化を見るのに適しています。</p>
+        
+        <div class="slider-box-1">
+            <label for="n1Slider">グラフ①の試行回数 n: <span id="n1Value">10</span></label><br>
+            <input type="range" id="n1Slider" min="1" max="100" step="1" value="10">
+            <br><br>
+            <label for="p1Slider">グラフ①の成功確率 p: <span id="p1Value">0.50</span></label><br>
+            <input type="range" id="p1Slider" min="0.01" max="0.99" step="0.01" value="0.50">
+        </div>
+
+        <canvas id="chart1"></canvas>
+    </div>
+
+    <!-- ================= グラフ②の領域 ================= -->
+    <div class="chart-section" style="border-bottom: none;">
+        <h2>② 横軸固定バージョン（0〜100）</h2>
+        <p>※ 分布の「位置の移動」や「広がり方（分散）」を見るのに適しています。</p>
+        
+        <div class="slider-box-2">
+            <label for="n2Slider">グラフ②の試行回数 n: <span id="n2Value">50</span></label><br>
+            <input type="range" id="n2Slider" min="1" max="100" step="1" value="50">
+            <br><br>
+            <label for="p2Slider">グラフ②の成功確率 p: <span id="p2Value">0.20</span></label><br>
+            <input type="range" id="p2Slider" min="0.01" max="0.99" step="0.01" value="0.20">
+        </div>
+
+        <canvas id="chart2"></canvas>
+    </div>
+
+    <script>
+        // 階乗・組み合わせ・確率の計算関数
+        function factorial(n) {
+            if (n === 0 || n === 1) return 1;
+            let result = 1;
+            for (let i = 2; i <= n; i++) result *= i;
+            return result;
+        }
+        function combination(n, k) {
+            return factorial(n) / (factorial(k) * factorial(n - k));
+        }
+        function binomPmf(k, n, p) {
+            return combination(n, k) * Math.pow(p, k) * Math.pow(1 - p, n - k);
+        }
+
+        let chart1 = null;
+        let chart2 = null;
+
+        // --- グラフ①（横軸自動）を更新する関数 ---
+        function updateChart1() {
+            const n = parseInt(document.getElementById('n1Slider').value);
+            const p = parseFloat(document.getElementById('p1Slider').value);
+            document.getElementById('n1Value').innerText = n;
+            document.getElementById('p1Value').innerText = p.toFixed(2);
+
+            const labels = [];
+            const data = [];
+            for (let k = 0; k <= n; k++) {
+                labels.push(k);
+                data.push(binomPmf(k, n, p));
+            }
+
+            if (chart1) chart1.destroy();
+            const ctx1 = document.getElementById('chart1').getContext('2d');
+            chart1 = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: `B(n=${n}, p=${p.toFixed(2)})`,
+                        data: data,
+                        backgroundColor: 'skyblue',
+                        borderColor: 'black',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { title: { display: true, text: '成功回数 X' } },
+                        y: { title: { display: true, text: '確率 P(X)' }, beginAtZero: true }
+                    },
+                    animation: false
+                }
+            });
+        }
+
+        // --- グラフ②（横軸固定）を更新する関数 ---
+        function updateChart2() {
+            const n = parseInt(document.getElementById('n2Slider').value);
+            const p = parseFloat(document.getElementById('p2Slider').value);
+            const maxN = parseInt(document.getElementById('n2Slider').max); // 常に100
+            
+            document.getElementById('n2Value').innerText = n;
+            document.getElementById('p2Value').innerText = p.toFixed(2);
+
+            const labels = [];
+            const data = [];
+            for (let k = 0; k <= maxN; k++) {
+                labels.push(k);
+                if (k <= n) {
+                    data.push(binomPmf(k, n, p));
+                } else {
+                    data.push(0);
+                }
+            }
+
+            if (chart2) chart2.destroy();
+            const ctx2 = document.getElementById('chart2').getContext('2d');
+            chart2 = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: `B(n=${n}, p=${p.toFixed(2)})`,
+                        data: data,
+                        backgroundColor: 'lightgreen',
+                        borderColor: 'black',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { 
+                            title: { display: true, text: '成功回数 X (0〜100固定)' },
+                            min: 0,
+                            max: maxN,
+                            ticks: { stepSize: 10 }
+                        },
+                        y: { title: { display: true, text: '確率 P(X)' }, beginAtZero: true }
+                    },
+                    animation: false
+                }
+            });
+        }
+
+        // スライダーのイベントリスナー登録
+        document.getElementById('n1Slider').addEventListener('input', updateChart1);
+        document.getElementById('p1Slider').addEventListener('input', updateChart1);
+        document.getElementById('n2Slider').addEventListener('input', updateChart2);
+        document.getElementById('p2Slider').addEventListener('input', updateChart2);
+
+        // ページ読み込み時に初期描画
+        updateChart1();
+        updateChart2();
+    </script>
+</body>
+</html>
