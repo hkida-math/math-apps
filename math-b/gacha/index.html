@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>二項分布ガチャシミュレーター</title>
+<style>
+  body {
+    font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+    text-align: center;
+    background-color: #f0f4f8;
+    color: #333;
+    padding: 20px;
+    margin: 0;
+  }
+  .container {
+    max-width: 600px;
+    margin: 0 auto;
+    background: #ffffff;
+    padding: 30px 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  }
+  h1 {
+    font-size: 1.5em;
+    margin-top: 0;
+    color: #2c3e50;
+  }
+  .controls {
+    margin: 25px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+  }
+  .input-group {
+    font-size: 1.2em;
+    font-weight: bold;
+  }
+  input[type="number"] {
+    font-size: 1.2em;
+    padding: 8px;
+    width: 100px;
+    text-align: center;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+  }
+  button {
+    font-size: 1.2em;
+    padding: 10px 25px;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    box-shadow: 0 4px 6px rgba(231, 76, 60, 0.3);
+  }
+  button:hover {
+    background-color: #c0392b;
+  }
+  .result {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #ecf0f1;
+    border-radius: 8px;
+  }
+  .hit-text { color: #d35400; font-size: 1.2em; }
+  .grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin-top: 25px;
+  }
+  .box {
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+    border-radius: 6px;
+    transition: transform 0.2s;
+  }
+  .hit {
+    background-color: #ffeaa7;
+    border: 2px solid #f39c12;
+    transform: scale(1.1);
+    z-index: 1;
+    box-shadow: 0 2px 4px rgba(243, 156, 18, 0.4);
+  }
+  .miss {
+    background-color: #f1f2f6;
+    color: #a4b0be;
+    border: 1px solid #dfe4ea;
+  }
+  .notice {
+    color: #7f8c8d;
+    font-size: 0.95em;
+    margin-top: 20px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🎯 二項分布ガチャシミュレーター</h1>
+  <p style="color: #7f8c8d; font-size: 0.9em;">確率 1/n のガチャを n 回引きます</p>
+  
+  <div class="controls">
+    <div class="input-group">
+      <label for="inputN">n = </label>
+      <input type="number" id="inputN" value="10" min="1" max="100000">
+    </div>
+    <button onclick="rollGacha()">ガチャを回す！</button>
+  </div>
+
+  <div class="result" id="resultText">
+    ここに結果が表示されます
+  </div>
+
+  <div class="grid" id="grid"></div>
+  <div class="notice" id="notice"></div>
+</div>
+
+<script>
+  function rollGacha() {
+    const n = parseInt(document.getElementById('inputN').value);
+    if (isNaN(n) || n < 1) {
+      alert('1以上の数字を入力してください');
+      return;
+    }
+
+    let hits = 0;
+    let misses = 0;
+    const history = [];
+
+    // ガチャの抽選処理
+    for (let i = 0; i < n; i++) {
+      if (Math.random() < 1 / n) {
+        hits++;
+        history.push(true);
+      } else {
+        misses++;
+        history.push(false);
+      }
+    }
+
+    // 結果のテキスト表示
+    document.getElementById('resultText').innerHTML = 
+      `結果: <span class="hit-text">当たり ${hits} 回</span> / はずれ ${misses} 回`;
+
+    // グリッド（履歴）の描画処理
+    const grid = document.getElementById('grid');
+    const notice = document.getElementById('notice');
+    grid.innerHTML = '';
+    notice.innerHTML = '';
+
+    if (n <= 100) {
+      history.forEach((isHit) => {
+        const div = document.createElement('div');
+        div.className = 'box ' + (isHit ? 'hit' : 'miss');
+        div.innerText = isHit ? '🎯' : '✖';
+        grid.appendChild(div);
+      });
+      notice.innerText = '※ 🎯が当たり、✖がはずれです。';
+    } else {
+      notice.innerHTML = '<strong>※ nが100を超えているため、詳細な履歴は省略し合計のみ表示します。</strong><br>（計算は内部で正しく ' + n + ' 回行われています）';
+    }
+  }
+</script>
+
+</body>
+</html>
