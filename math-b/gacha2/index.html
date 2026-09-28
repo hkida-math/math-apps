@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二項分布・ガチャ確率シミュレーター</title>
+    <style>
+        body { font-family: "Helvetica Neue", Arial, sans-serif; max-width: 800px; margin: 30px auto; padding: 0 20px; background: #f4f7f6; color: #333; }
+        h1 { text-align: center; color: #2c3e50; font-size: 1.6rem; }
+        h2 { font-size: 1.2rem; color: #34495e; margin-top: 0; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 25px; }
+        .control-group { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 15px; }
+        label { font-weight: bold; }
+        input[type="number"] { width: 110px; padding: 6px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
+        button { border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 1.05rem; font-weight: bold; transition: 0.2s; color: white; }
+        .btn-orange { background: #e67e22; }
+        .btn-orange:hover { background: #d35400; }
+        .btn-purple { background: #8e44ad; }
+        .btn-purple:hover { background: #732d91; }
+        
+        .gacha-result-box { background: #fdfefe; border: 1px solid #dcdde1; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .gacha-summary { font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; }
+        .hit-count { color: #e74c3c; font-size: 1.3rem; }
+        .detail-grid { display: flex; flex-wrap: wrap; gap: 6px; max-height: 220px; overflow-y: auto; padding: 8px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e9ecef; }
+        .detail-item { padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; font-family: monospace; }
+        .badge-hit { background: #ffeaa7; border: 1px solid #fdcb6e; color: #d63031; font-weight: bold; }
+        .badge-miss { background: #ffffff; border: 1px solid #dfe4ea; color: #747d8c; }
+        .note { color: #7f8c8d; font-size: 0.85rem; font-style: italic; margin-top: 5px; }
+        .prob-info { font-size: 0.95rem; color: #2c3e50; background: #e8f4f8; padding: 6px 12px; border-radius: 4px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<h1>ガチャ確率シミュレーター</h1>
+
+<!-- 項目1：確率 1/10 固定ガチャ -->
+<div class="card">
+    <h2>1. 確率 1/10 固定ガチャ（試行回数 n）</h2>
+    <div class="control-group">
+        <label for="gachaN1">試行回数 (n): </label>
+        <input type="number" id="gachaN1" value="10" min="1" step="1">
+        <span class="prob-info">確率 p = 1/10 (0.1) 固定</span>
+        <button class="btn-orange" onclick="playGachaFixed()">ガチャを引く！</button>
+    </div>
+
+    <div class="gacha-result-box" id="resultArea1" style="display: none;">
+        <div class="gacha-summary" id="summary1"></div>
+        <div id="details1"></div>
+    </div>
+</div>
+
+<!-- 項目2：確率 1/N ガチャ -->
+<div class="card">
+    <h2>2. 確率 1/N ガチャ（試行回数 N × 確率 1/N）</h2>
+    <div class="control-group">
+        <label for="gachaN2">試行回数 (N): </label>
+        <input type="number" id="gachaN2" value="100" min="1" step="1" oninput="updateProbLabel()">
+        <span class="prob-info" id="probLabel2">確率 p = 1/100 (0.01)</span>
+        <button class="btn-purple" onclick="playGacha1N()">1/N ガチャを引く！</button>
+    </div>
+
+    <div class="gacha-result-box" id="resultArea2" style="display: none;">
+        <div class="gacha-summary" id="summary2"></div>
+        <div id="details2"></div>
+    </div>
+</div>
+
+<script>
+    // 項目1：確率1/10固定ガチャ
+    function playGachaFixed() {
+        const n = parseInt(document.getElementById('gachaN1').value);
+        if (isNaN(n) || n <= 0) {
+            alert('1以上の正の整数を入力してください。');
+            return;
+        }
+        const p = 0.1;
+        runSimulation(n, p, 'resultArea1', 'summary1', 'details1');
+    }
+
+    // 項目2：確率1/Nガチャの確率表示自動更新
+    function updateProbLabel() {
+        const n = parseInt(document.getElementById('gachaN2').value);
+        const label = document.getElementById('probLabel2');
+        if (!isNaN(n) && n > 0) {
+            const p = (1 / n).toFixed(6).replace(/\.?0+$/, '');
+            label.innerText = `確率 p = 1/${n} (${p})`;
+        } else {
+            label.innerText = `確率 p = 1/N`;
+        }
+    }
+
+    // 項目2：確率1/Nガチャの実行
+    function playGacha1N() {
+        const n = parseInt(document.getElementById('gachaN2').value);
+        if (isNaN(n) || n <= 0) {
+            alert('1以上の正の整数を入力してください。');
+            return;
+        }
+        const p = 1 / n;
+        runSimulation(n, p, 'resultArea2', 'summary2', 'details2');
+    }
+
+    // 共通シミュレーション処理
+    function runSimulation(n, p, areaId, summaryId, detailsId) {
+        let hits = 0;
+        let misses = 0;
+        let details = [];
+
+        for (let i = 1; i <= n; i++) {
+            const isHit = Math.random() < p;
+            if (isHit) {
+                hits++;
+                if (n <= 100) details.push({ round: i, isHit: true });
+            } else {
+                misses++;
+                if (n <= 100) details.push({ round: i, isHit: false });
+            }
+        }
+
+        // 表示エリアを開く
+        document.getElementById(areaId).style.display = 'block';
+
+        // 集計結果の表示
+        document.getElementById(summaryId).innerHTML = 
+            `結果： 当たり <span class="hit-count">${hits}</span> 回 ／ はずれ ${misses} 回 （合計 ${n} 回）`;
+
+        // 100回以下なら個別表示、超えたら省略案内
+        const detailContainer = document.getElementById(detailsId);
+        detailContainer.innerHTML = '';
+
+        if (n <= 100) {
+            let html = '<div class="detail-grid">';
+            details.forEach(item => {
+                const badgeClass = item.isHit ? 'badge-hit' : 'badge-miss';
+                const label = item.isHit ? '🎯当たり' : '❌はずれ';
+                html += `<div class="detail-item ${badgeClass}">#${item.round}: ${label}</div>`;
+            });
+            html += '</div>';
+            detailContainer.innerHTML = html;
+        } else {
+            detailContainer.innerHTML = '<p class="note">※ 試行回数が100回を超えるため、1回ごとの結果表示は省略しています。</p>';
+        }
+    }
+
+    // 初期表示設定
+    updateProbLabel();
+</script>
+
+</body>
+</html>
