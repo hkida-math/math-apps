@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>問3｜動く辺RSとボールの反射シミュレーション</title>
+<style>
+:root{color-scheme:light;--navy:#172938;--muted:#637485;--teal:#007e82;--pale:#edf7f6;--border:#dce4e8;--bg:#f6f8f9;--orange:#ef7a38}
+*{box-sizing:border-box}body{margin:0;font-family:"BIZ UDPGothic","Noto Sans JP","Yu Gothic",sans-serif;background:var(--bg);color:var(--navy)}
+.shell{max-width:1210px;margin:0 auto;padding:20px}.eyebrow{color:var(--teal);font-size:12px;font-weight:800;letter-spacing:.12em;margin:0 0 7px}
+h1{font-size:clamp(20px,2.5vw,28px);letter-spacing:.015em;margin:0 0 6px} .intro{font-size:14px;line-height:1.75;color:#435565;margin:0 0 18px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 288px;gap:16px;align-items:start} .scene,.panel,.notes{background:white;border:1px solid var(--border);border-radius:15px;box-shadow:0 2px 9px rgba(20,45,55,.035)}
+.scene{padding:12px 12px 14px}.stage{position:relative;touch-action:none}canvas{display:block;width:100%;height:auto;aspect-ratio:820/590;touch-action:none;cursor:default;border-radius:8px;background:#fff}
+.legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:12px;color:#5a6975;padding:9px 3px 0}.swatch{display:inline-block;width:17px;height:3px;vertical-align:middle;margin:0 5px 2px 0;border-radius:2px}.panel{padding:18px;display:flex;flex-direction:column;gap:15px}
+.panel h2{font-size:17px;margin:0}.field{display:flex;flex-direction:column;gap:8px}.fieldtitle{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:700}.value{font-variant-numeric:tabular-nums;font-size:15px;color:var(--teal)}
+input[type=range]{width:100%;accent-color:var(--teal);cursor:pointer} .hint{color:var(--muted);font-size:12px;line-height:1.6}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:9px} button{border:1px solid var(--border);background:white;color:var(--navy);border-radius:9px;min-height:42px;padding:9px 10px;font:700 13px inherit;font-size:13px;font-weight:700;cursor:pointer;transition:background .1s,border-color .1s}
+button:hover{background:#eef5f5}button.primary{background:var(--teal);border-color:var(--teal);color:white}button.primary:hover{background:#00696f}button:disabled{opacity:.45;cursor:not-allowed}button.full{width:100%}
+.metrics{border-top:1px solid var(--border);padding-top:13px;display:flex;flex-direction:column;gap:10px}.metric{display:flex;justify-content:space-between;gap:12px;font-size:13px}.metric strong{font-variant-numeric:tabular-nums;font-size:14px;text-align:right}
+.notice{border-radius:9px;background:#f2f6f7;padding:11px 12px;font-size:12px;line-height:1.7;min-height:62px}.notice.good{background:#e7f5ef;color:#166b47}.notice.warn{background:#fff4e9;color:#956226}
+.option{display:flex;align-items:center;gap:9px;font-size:13px;cursor:pointer}.option input{accent-color:var(--teal)}
+.notes{margin-top:14px;padding:14px 17px;color:#4d6070;line-height:1.8;font-size:12.5px}.notes strong{color:var(--navy)}
+@media(max-width:860px){.layout{grid-template-columns:1fr}.panel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.panel h2,.metrics,.notice{grid-column:1/-1}.shell{padding:10px}.scene{padding:6px}.controls{grid-column:1/-1}.notes{margin-top:10px}}
+@media(max-width:520px){.panel{display:flex}.legend{gap:6px 12px}.intro{font-size:13px}}
+</style>
+</head>
+<body>
+<div class="shell">
+<p class="eyebrow">幾何・作図シミュレーション</p>
+<h1>問3｜辺RSの位置と球の反射</h1>
+<p class="intro">点Aから出発した球は、指定された点C（辺PQ上）で反射し、次に辺QR、辺RSで反射します。<strong>点Sをドラッグ</strong>してRSの向きを変え、球が再び点Aを通る位置を探しましょう。</p>
+<div class="layout">
+<section class="scene" aria-label="球の反射シミュレーション図">
+<div class="stage"><canvas id="field" width="820" height="590" aria-label="Q、P、R、A、Cと動くS、球の軌跡の図"></canvas></div>
+<div class="legend"><span><i class="swatch" style="background:#34465b"></i>固定された辺 PQ・QR</span><span><i class="swatch" style="background:#008b8d"></i>動かせる辺 RS</span><span><i class="swatch" style="background:#eb7d35"></i>球・軌跡</span><span><i class="swatch" style="background:#aab9c4"></i>円弧（RS＝RP）</span></div>
+</section>
+<aside class="panel">
+<h2>操作パネル</h2>
+<div class="field">
+<div class="fieldtitle"><label for="angle">点Sの位置（角度）</label><span class="value" id="angleVal">105.0°</span></div>
+<input type="range" id="angle" min="78" max="129" step="0.1" value="105" aria-label="点Sの角度">
+<div class="hint">図のSを直接ドラッグしても動かせます。<br>RSの長さはRPと常に等しく保たれます。</div>
+</div>
+<div class="field"><div class="fieldtitle"><label for="speed">球の速さ</label><span id="speedVal">標準</span></div><input id="speed" type="range" min="0.5" max="3" value="1.3" step="0.1"></div>
+<div class="controls"><button class="primary" id="start">▶ スタート</button><button id="pause" disabled>一時停止</button><button id="reset">最初に戻す</button><button id="answer">解となる位置</button></div>
+<label class="option"><input type="checkbox" id="trail" checked>球の軌跡を残す</label>
+<div class="metrics"><div class="metric"><span>反射回数</span><strong id="count">0 / 3</strong></div><div class="metric"><span>反射した辺</span><strong id="edges">—</strong></div><div class="metric"><span>3回目の反射後のAからのずれ</span><strong id="miss">—</strong></div></div>
+<div class="notice" id="status" role="status">点Sを動かして、「スタート」を押してください。</div>
+</aside>
+</div>
+<div class="notes"><strong>観察のポイント：</strong>球は各辺で入射角と反射角が等しくなるように反射します。点Sを動かしても、最初の衝突点Cと次の辺QRでの反射は変化しません。<strong>RSにぶつかる位置と、その後の進行方向</strong>が変化します。図の点・位置関係は元問題をもとにしたシミュレーション用の配置です（原図の寸法を再現したものではありません）。</div>
+</div>
+<script>
+(()=>{
+'use strict';
+const canvas=document.getElementById('field'), ctx=canvas.getContext('2d');
+const ui={angle:document.getElementById('angle'),angleVal:document.getElementById('angleVal'),speed:document.getElementById('speed'),speedVal:document.getElementById('speedVal'),start:document.getElementById('start'),pause:document.getElementById('pause'),reset:document.getElementById('reset'),answer:document.getElementById('answer'),trail:document.getElementById('trail'),count:document.getElementById('count'),edges:document.getElementById('edges'),miss:document.getElementById('miss'),status:document.getElementById('status')};
+const bounds={xmin:25,xmax:795,ymin:25,ymax:566};
+const MIN=78,MAX=129;
+let theta=105,playing=false,paused=false,completed=false,dragging=false,progress=0,lastTime=0,route=[],hits=[],totalDistance=0,finalError=null,reachedA=false,correctTheta=null;
+const vec=(x,y)=>({x,y});
+function add(a,b){return vec(a.x+b.x,a.y+b.y)}
+function sub(a,b){return vec(a.x-b.x,a.y-b.y)}
+function scale(a,k){return vec(a.x*k,a.y*k)}
+function dot(a,b){return a.x*b.x+a.y*b.y}
+function cross(a,b){return a.x*b.y-a.y*b.x}
+function length(a){return Math.hypot(a.x,a.y)}
+function norm(a){return scale(a,1/length(a))}
+function segmentLen(a,b){return length(sub(b,a))}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+const Q={x:170,y:500},P={x:355,y:260},R={x:565,y:500},A={x:360,y:400},C=add(Q,scale(sub(P,Q),.6));
+const radius=length(sub(P,R));
+function Sfor(deg){const r=deg*Math.PI/180;return add(R,vec(radius*Math.cos(r),-radius*Math.sin(r)))}
+function bounce(v,p0,p1){const t=norm(sub(p1,p0));return sub(scale(t,2*dot(v,t)),v)}
+function intersection(origin,dir,a,b){const w=sub(b,a),den=cross(dir,w);if(Math.abs(den)<1e-10)return null;const d=sub(a,origin),t=cross(d,w)/den,u=cross(d,dir)/den;if(t<=.0003 || u<.00001 || u>1.00001)return null;return {t,u,at:add(origin,scale(dir,t))}}
+function wallsFor(deg){return [{name:'PQ',a:Q,b:P},{name:'QR',a:Q,b:R},{name:'RS',a:R,b:Sfor(deg)}]}
+function rayEnd(origin,dir){let best=Infinity;for(const [o,d,lo,hi] of [[origin.x,dir.x,bounds.xmin,bounds.xmax],[origin.y,dir.y,bounds.ymin,bounds.ymax]]){if(Math.abs(d)>1e-8){const target=d>0?hi:lo;const t=(target-o)/d;if(t>.0001&&t<best)best=t}}return add(origin,scale(dir,Number.isFinite(best)?best:400))}
+function buildRoute(deg){
+ const walls=wallsFor(deg);let start=A,direction=norm(sub(C,A)),previous='',list=[],hitlist=[],cum=0,miss=null,along=null,reachedA=false;
+ for(let n=0;n<12;n++){
+  let nearest=null,chosen=null;
+  for(const wall of walls){if(wall.name===previous)continue;const z=intersection(start,direction,wall.a,wall.b);if(z&&(!nearest||z.t<nearest.t)){nearest=z;chosen=wall}}
+  const boundary=rayEnd(start,direction),boundaryDist=length(sub(boundary,start));
+  // Detect the return to A before another collision. Only the first three prescribed reflections count.
+  if(n===3&&miss!==null&&miss<=4){
+   const travel=dot(sub(A,start),direction);
+   if(travel>0&&travel<boundaryDist&&(nearest===null||travel<nearest.t)){
+    const end=add(start,scale(direction,travel));
+    list.push({a:start,b:end,len:travel,at:cum,until:cum+travel,edge:null});cum+=travel;reachedA=true;break;
+   }
+  }
+  if(!nearest||nearest.t>=boundaryDist||cum>=2000){
+   list.push({a:start,b:boundary,len:boundaryDist,at:cum,until:cum+boundaryDist,edge:null});cum+=boundaryDist;break;
+  }
+  const end=nearest.at,dist=segmentLen(start,end);
+  list.push({a:start,b:end,len:dist,at:cum,until:cum+dist,edge:chosen.name});cum+=dist;
+  hitlist.push({edge:chosen.name,at:cum,point:end});direction=norm(bounce(direction,chosen.a,chosen.b));start=end;previous=chosen.name;
+  if(n===2&&hitlist.map(h=>h.edge).join(',')==='PQ,QR,RS'){
+   const d=sub(A,start);along=dot(d,direction);miss=along>0?Math.abs(cross(direction,d)):null;
+  }
+ }
+ // Safety cap for exceptional repeated reflections, with an end to the drawn trajectory.
+ if(list.length&&list[list.length-1].edge!==null){const boundary=rayEnd(start,direction),dist=length(sub(boundary,start));list.push({a:start,b:boundary,len:dist,at:cum,until:cum+dist,edge:null});cum+=dist}
+ return {segments:list,hits:hitlist,total:cum,miss,along,reachedA};
+}
+function solve(){// Solve the same reflection equations used by the simulation, without assuming a preset answer.
+ let last=null;
+ for(let deg=MIN;deg<=MAX;deg+=.15){const r=buildRoute(deg);if(r.hits.length!==3||r.hits.map(x=>x.edge).join(',')!=='PQ,QR,RS')continue;
+ const outgoing=norm(sub(r.segments[3].b,r.segments[3].a)),end=r.hits[2].point;const signed=cross(outgoing,sub(A,end));
+ if(last&&signed*last.signed<=0){let lo=last.deg,hi=deg,fl=last.signed;for(let i=0;i<45;i++){const mid=(lo+hi)/2;const rm=buildRoute(mid),v=norm(sub(rm.segments[3].b,rm.segments[3].a));const s=cross(v,sub(A,rm.hits[2].point));if(fl*s<=0)hi=mid;else{lo=mid;fl=s}}const root=(lo+hi)/2,rr=buildRoute(root);if(rr.along>0&&rr.miss<.02)return root}
+ last={deg,signed};
+ }return null;
+}
+function setStatus(message,kind=''){ui.status.textContent=message;ui.status.className='notice'+(kind?' '+kind:'')}
+function resetRun(message){playing=false;paused=false;completed=false;progress=0;lastTime=0;const p=buildRoute(theta);route=p.segments;hits=p.hits;totalDistance=p.total;finalError=p.miss;reachedA=p.reachedA;ui.pause.disabled=true;ui.pause.textContent='一時停止';ui.count.textContent='0 / 3';ui.edges.textContent='—';ui.miss.textContent='—';if(message)setStatus(message);draw()}
+function setAngle(value){theta=clamp(Number(value),MIN,MAX);ui.angle.value=theta;ui.angleVal.textContent=theta.toFixed(1)+'°';resetRun('位置を変更しました。この位置から「スタート」で球が動きます。')}
+function worldPos(event){const r=canvas.getBoundingClientRect();return vec((event.clientX-r.left)*canvas.width/r.width,(event.clientY-r.top)*canvas.height/r.height)}
+function updateAngleFromPointer(pos){const raw=Math.atan2(R.y-pos.y,pos.x-R.x)*180/Math.PI;setAngle(clamp(raw,MIN,MAX))}
+canvas.addEventListener('pointerdown',e=>{const p=worldPos(e),s=Sfor(theta);if(length(sub(p,s))<37){dragging=true;canvas.setPointerCapture(e.pointerId);updateAngleFromPointer(p);canvas.style.cursor='grabbing';e.preventDefault()}});
+canvas.addEventListener('pointermove',e=>{const p=worldPos(e);if(dragging){updateAngleFromPointer(p);e.preventDefault()}else canvas.style.cursor=length(sub(p,Sfor(theta)))<37?'grab':'default'});
+function release(){dragging=false;canvas.style.cursor='default'}canvas.addEventListener('pointerup',release);canvas.addEventListener('pointercancel',release);
+ui.angle.addEventListener('input',e=>setAngle(e.target.value));
+ui.speed.addEventListener('input',()=>{const v=Number(ui.speed.value);ui.speedVal.textContent=v===1.3?'標準':(v/1.3).toFixed(1)+' 倍'});
+ui.start.addEventListener('click',()=>{resetRun();playing=true;paused=false;ui.pause.disabled=false;setStatus('球が点Aから点Cに向かって進んでいます。');});
+ui.pause.addEventListener('click',()=>{if(!playing)return;paused=!paused;ui.pause.textContent=paused?'再開':'一時停止';setStatus(paused?'一時停止中です。':'球が動いています。')});
+ui.reset.addEventListener('click',()=>resetRun('球を点Aに戻しました。'));
+ui.answer.addEventListener('click',()=>{if(correctTheta!==null){setAngle(correctTheta);setStatus('反射後に点Aを通る位置にSを合わせました。スタートで確かめてください。','good')}});
+ui.trail.addEventListener('change',draw);
+function prepareTrace(){if(!route.length)resetRun()}
+function getActive(){let x=progress;for(let k=0;k<route.length;k++){const seg=route[k];if(x<=seg.until||k===route.length-1){const t=seg.len?clamp((x-seg.at)/seg.len,0,1):0;return {pos:add(seg.a,scale(sub(seg.b,seg.a),t)),index:k}}}return {pos:A,index:0}}
+function line(a,b,color,width=2,dash=[]){ctx.save();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.setLineDash(dash);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.restore()}
+function point(p,color='#283748',r=4){ctx.beginPath();ctx.arc(p.x,p.y,r,0,2*Math.PI);ctx.fillStyle=color;ctx.fill()}
+function label(txt,p,dx,dy,color='#182c3b',size=16){ctx.font=`600 ${size}px "Yu Gothic","Noto Sans JP",sans-serif`;ctx.fillStyle=color;ctx.fillText(txt,p.x+dx,p.y+dy)}
+function draw(){ctx.clearRect(0,0,820,590);ctx.fillStyle='#ffffff';ctx.fillRect(0,0,820,590);
+ // Unobtrusive dot grid to help compare the trajectories.
+ ctx.fillStyle='#e8edef';for(let x=40;x<=790;x+=25)for(let y=45;y<=555;y+=25){ctx.beginPath();ctx.arc(x,y,.9,0,2*Math.PI);ctx.fill()}
+ const s=Sfor(theta);
+ // Constant radius: S moves on this circular arc.
+ ctx.save();ctx.beginPath();for(let d=MIN;d<=MAX;d+=.35){const p=Sfor(d);if(d===MIN)ctx.moveTo(p.x,p.y);else ctx.lineTo(p.x,p.y)}ctx.strokeStyle='#b6c4cf';ctx.lineWidth=1.5;ctx.setLineDash([5,7]);ctx.stroke();ctx.restore();
+ line(Q,P,'#34465b',4.5);line(Q,R,'#34465b',4.5);line(R,s,'#008b8d',5);
+ // small radius curve near R for a visible pivot axis
+ point(Q,'#34465b',4.5);point(P,'#34465b',4.5);point(R,'#34465b',5);
+ point(C,'#303f52',5);point(A,'#e16f2d',6);
+ label('Q',Q,-22,19);label('P',P,-11,-12);label('R',R,10,20);label('A（出発点）',A,10,-13,'#b96331',13);label('C',C,-23,-9);
+ // S: draggable handle drawn last so that students can locate it easily.
+ ctx.save();ctx.beginPath();ctx.arc(s.x,s.y,21,0,Math.PI*2);ctx.fillStyle='rgba(0,139,141,.09)';ctx.fill();ctx.restore();point(s,'#008b8d',8);ctx.strokeStyle='white';ctx.lineWidth=2;ctx.beginPath();ctx.arc(s.x,s.y,4,0,Math.PI*2);ctx.stroke();label('S  ↔ ドラッグ',s,15,-14,'#007e82',14);
+ if(progress>0||completed){const current=getActive(),show=ui.trail.checked;
+ if(show){for(let i=0;i<route.length;i++){const seg=route[i];if(progress<=seg.at)break;const t=clamp((progress-seg.at)/seg.len,0,1);if(t>0)line(seg.a,add(seg.a,scale(sub(seg.b,seg.a),t)),'#ed8549',3.5)}
+ hits.forEach((h,i)=>{if(progress+0.001>=h.at){point(h.point,'#d67637',5);if(i===1)label('E',h.point,10,17,'#b86d36',13);if(i===2)label('F',h.point,12,-12,'#b86d36',13)}})}
+ const b=current.pos;ctx.save();ctx.shadowBlur=16;ctx.shadowColor='rgba(255,136,52,.45)';point(b,'#ef7a32',8);ctx.restore();point(add(b,vec(-2,-2)),'#fff0d9',2.6);
+ }
+ // Display an A target ring when a ball has reached the last bounce.
+ const lastHit=hits.length===3?hits[2]:null;
+ if(lastHit&&progress>=lastHit.at){ctx.save();ctx.strokeStyle=finalError!==null&&finalError<=4?'#23956a':'#b9c3c9';ctx.lineWidth=2;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(A.x,A.y,13,0,Math.PI*2);ctx.stroke();ctx.restore()}
+}
+function updateProgressStatus(){const n=hits.filter(h=>progress+0.0001>=h.at).length;ui.count.textContent=n<=3?n+' / 3':n+' 回';ui.edges.textContent=hits.slice(0,Math.min(n,3)).map(h=>h.edge).join(' → ')+(n>3?' → …':'')||'—';
+ if(n===1)setStatus('点Cで辺PQに反射しました。次は辺QRです。');
+ if(n===2)setStatus('辺QRで反射しました。次は可動辺RSです。');
+ if(n>=3){if(hits.slice(0,3).map(h=>h.edge).join(',')!=='PQ,QR,RS'){setStatus('指定順序と異なる辺で反射しました。Sの位置を変えてみましょう。','warn');ui.miss.textContent='指定順序ではありません';}
+ else if(finalError===null){setStatus('辺RSで反射しましたが、Aへ向かう方向ではありません。','warn');ui.miss.textContent='Aの方向ではない';}
+ else{ui.miss.textContent=finalError.toFixed(2)+'（図の単位）';if(finalError<=4){const final=route[3],unit=norm(sub(final.b,final.a)),t=dot(sub(A,final.a),unit);if(reachedA&&progress>=totalDistance-.1){setStatus('球が再び点A付近を通りました！ このSの位置が条件を満たします。','good')}else setStatus('辺RSで反射しました。点Aを通るか確かめましょう。')}else setStatus(n>3?'3回目の反射後は点Aを通らず、さらに反射しています。':'辺RSで反射しましたが、点Aからずれて通過します。','warn')}
+ }
+ }
+function tick(now){const dt=lastTime?Math.min((now-lastTime)/1000,.05):0;lastTime=now;if(playing&&!paused){progress=Math.min(totalDistance,progress+dt*150*Number(ui.speed.value));updateProgressStatus();if(progress>=totalDistance){playing=false;completed=true;ui.pause.disabled=true;if(hits.length<3)setStatus('球が3回反射する前に枠の外へ出ました。','warn');else if(reachedA)setStatus('球が点A付近に戻りました。別のSでも試しましょう。','good');else setStatus('球が図の外へ出ました。Sの位置を変えて比較してみましょう。','warn')}}draw();requestAnimationFrame(tick)}
+correctTheta=solve();if(correctTheta===null){ui.answer.disabled=true;ui.answer.title='条件を満たす角度が見つかりませんでした'}
+resetRun('点Sを動かして、「スタート」を押してください。');requestAnimationFrame(tick);
+window.__simDebug=()=>({angle:theta,solutionAngle:correctTheta,hits:buildRoute(theta).hits.map(h=>h.edge),miss:buildRoute(theta).miss,progress,playing,route:route.map(x=>({edge:x.edge,len:x.len}))});
+})();
+</script>
+</body>
+</html>
