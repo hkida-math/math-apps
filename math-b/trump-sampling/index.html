@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>トランプで調べる 標本平均の分布 | 数学B</title>
+<style>
+:root{--bg:#f4f7fa;--paper:#fff;--text:#182c3e;--muted:#52677b;--border:#d9e3ec;--blue:#287bb1;--teal:#138e7c;--orange:#de8b3b;--purple:#8460b1;--pale:#eef7fc;--shadow:0 8px 28px rgba(27,65,93,.07)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;color:var(--text);line-height:1.55;font-size:15px}
+header{background:#123955;color:#fff;padding:27px max(22px,calc((100vw - 1160px)/2));}
+.header-tag{font-size:12px;font-weight:700;letter-spacing:.1em;color:#b6dbed;margin-bottom:8px}
+h1{font-size:clamp(22px,2.8vw,31px);font-weight:760;letter-spacing:.015em;line-height:1.33;margin:0 0 6px}
+.subtitle{font-size:14px;color:#d6e7f1;margin:0;max-width:780px}
+main{max-width:1200px;margin:0 auto;padding:24px 20px 50px}
+.panel{background:var(--paper);border:1px solid var(--border);box-shadow:var(--shadow);border-radius:15px;padding:23px;margin-bottom:19px}
+.section-top{display:flex;align-items:start;justify-content:space-between;gap:15px;flex-wrap:wrap;margin-bottom:17px}
+h2{font-size:20px;margin:0 0 5px;line-height:1.35;letter-spacing:.008em}
+h3{font-size:15px;margin:0 0 10px}
+p{margin:5px 0 9px}.note{font-size:13px;color:var(--muted)}.small{font-size:12px;color:var(--muted)}
+.step{display:inline-flex;align-items:center;justify-content:center;min-width:27px;height:27px;background:var(--pale);color:#126490;border-radius:8px;margin-right:9px;font-size:14px;font-weight:800}
+.action-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+button{border:1px solid #b9cbd8;background:white;border-radius:9px;padding:10px 15px;min-height:41px;font:inherit;font-size:13px;font-weight:650;color:#234256;cursor:pointer;touch-action:manipulation}
+button:hover{background:#f0f6fa}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #8bccf2;outline-offset:1px}
+button.primary{background:#126b9e;border-color:#126b9e;color:#fff;font-size:15px;padding:11px 21px}button.primary:hover{background:#075681}
+button.secondary{border-color:#1c8c7c;color:#097d6a}button:disabled{opacity:.48;cursor:not-allowed}
+input[type=number],select{border:1px solid #b8cad7;background:#fff;border-radius:9px;font:inherit;color:var(--text);padding:9px 8px;min-height:43px;max-width:100%}
+.count-grid{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:8px}
+.count-item{padding:9px 5px 8px;min-width:0;text-align:center;background:#f7fafc;border:1px solid #dde7ef;border-radius:10px}
+.count-item .face{display:block;font-size:17px;font-weight:800;line-height:1.25}
+.count-item .rank{display:block;font-size:11px;color:var(--muted);height:17px}
+.count-item input{width:100%;max-width:72px;text-align:center;font-size:19px;font-variant-numeric:tabular-nums;font-weight:680;padding:5px 3px;min-height:42px;margin-top:6px}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:17px}
+.metric{border:1px solid var(--border);border-radius:12px;background:#f9fcfe;padding:12px 15px;min-width:0}
+.metric .key{font-size:12px;color:var(--muted)}.metric .num{font-size:clamp(20px,2.3vw,27px);font-weight:780;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.4}
+.metric .detail{font-size:11px;color:var(--muted);line-height:1.35}
+.split{display:grid;grid-template-columns: minmax(0,1.35fr) minmax(300px,.85fr);gap:19px}
+.visbox{border:1px solid #e0e9ef;border-radius:12px;padding:15px;min-width:0;background:#fff}
+.chartwrap{width:100%;overflow:hidden;min-height:240px;display:flex;align-items:center;justify-content:center}
+.chartwrap svg{width:100%;height:auto;max-height:340px;display:block;overflow:visible}
+.empty{padding:35px 12px;text-align:center;color:#6e8393;font-size:13px}
+.controls{display:flex;gap:16px;align-items:end;flex-wrap:wrap;margin:12px 0 6px}
+.field{min-width:125px;display:flex;flex-direction:column;gap:5px;flex:0 1 150px}
+.field label{font-size:13px;font-weight:700}
+.field input{width:100%;font-size:17px;font-weight:650;font-variant-numeric:tabular-nums}
+.hint{background:#eff7f4;border-left:3px solid #329888;border-radius:5px;padding:10px 13px;font-size:13px;color:#305f54;margin-top:14px}
+.warning{background:#fff8e9;border-left-color:#d19c3d;color:#6e5119}
+.hidden{display:none!important}
+.afterdata{margin-top:17px}
+.chart-title-row{display:flex;gap:9px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.chart-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:7px 0 2px;font-size:12px;color:#3e566b}
+.chart-controls label{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.chart-controls input{accent-color:#15799f;width:15px;height:15px}
+.chart-controls select{min-height:31px;padding:2px 6px;font-size:12px;border-radius:6px}
+.legend{display:flex;flex-wrap:wrap;align-items:center;gap:13px;font-size:11px;color:#516579;margin-top:5px}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.legend em{width:13px;height:9px;background:var(--blue);opacity:.7;display:inline-block;border-radius:2px}
+.legend .line{width:15px;height:0;border-top:3px solid var(--teal);opacity:1;border-radius:0}
+.legend .dash{width:15px;height:0;border-top:3px dashed var(--purple);opacity:1;border-radius:0}
+.tbl-scroll{overflow-x:auto;max-width:100%;margin-top:12px}
+table{border-collapse:collapse;width:100%;min-width:600px;font-size:13px}th,td{padding:10px 12px;text-align:right;border-bottom:1px solid #e5ecf1;white-space:nowrap;font-variant-numeric:tabular-nums}th:first-child,td:first-child{text-align:left}th{background:#f0f5f8;color:#3d5567;font-size:12px}td.emph{font-weight:750;color:#115f8c}
+.checklist{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:#315467}
+.checklist label{display:inline-flex;gap:5px;align-items:center}
+footer{font-size:12px;color:#6c8091;padding:8px 0 20px}
+@media(max-width:950px){.count-grid{grid-template-columns:repeat(7,minmax(0,1fr))}.split{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:490px){main{padding:14px 11px 35px}.panel{padding:15px 12px;margin-bottom:13px}.count-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.metrics{gap:7px}.metric{padding:9px}.metric .num{font-size:20px}.controls{gap:9px}.field{flex-basis:130px}.action-row{gap:6px}button{padding:9px 11px}header{padding:21px 17px}.chartwrap{min-height:205px}}
+@media print{header{color:#111;background:white;padding:0 0 15px}main{padding:0}.panel{box-shadow:none;break-inside:avoid}button,.controls .primary{display:none}}
+</style>
+</head>
+<body>
+<header>
+<div class="header-tag">数学B ｜ 統計的な推測 ｜ 実習用Webアプリ</div>
+<h1>トランプで調べる 標本平均の分布</h1>
+<p class="subtitle">カードの枚数が異なる母集団でも、母平均・母分散を自動計算。標本サイズと標本数を変えて、分布の変化を確かめよう。</p>
+</header>
+<main>
+<section class="panel" aria-labelledby="s1">
+  <div class="section-top">
+    <div><h2 id="s1"><span class="step">1</span>母集団のカードを入力</h2><p class="note">A＝1、J＝11、Q＝12、K＝13。カードがない数字は0枚にしてください（ジョーカーは含めません）。</p></div>
+    <div class="action-row"><button type="button" id="exampleBtn">例の40枚を入力</button><button type="button" id="fullBtn">52枚にする</button><button type="button" id="clearBtn">すべて0枚にする</button></div>
+  </div>
+  <div class="count-grid" id="counts" aria-label="各カード数字の枚数"></div>
+  <div class="metrics" aria-live="polite">
+    <div class="metric"><div class="key">母集団の大きさ N</div><div id="N" class="num">0 枚</div><div class="detail">入力した枚数の合計</div></div>
+    <div class="metric"><div class="key">母平均 μ</div><div id="mu" class="num">—</div><div class="detail">Σ(x × 枚数) / N</div></div>
+    <div class="metric"><div class="key">母分散 σ²</div><div id="popVar" class="num">—</div><div class="detail">Σ(x² × 枚数)/N − μ²</div></div>
+    <div class="metric"><div class="key">母標準偏差 σ</div><div id="popSd" class="num">—</div><div class="detail">√(母分散)</div></div>
+  </div>
+  <div class="afterdata split">
+    <div class="visbox"><h3>母集団の分布（数字ごとの枚数）</h3><div class="chartwrap" id="populationChart"><div class="empty">枚数を入力するとグラフが表示されます。</div></div></div>
+    <div class="visbox">
+      <h3>この母集団の計算</h3>
+      <div id="formulas" class="note">カードの枚数を入力すると、合計値と計算式が表示されます。</div>
+      <div class="hint">各グループの母集団が違っていても、このアプリでは入力した枚数から理論値を計算します。</div>
+    </div>
+  </div>
+</section>
+<section class="panel" aria-labelledby="s2">
+  <div class="section-top">
+    <div><h2 id="s2"><span class="step">2</span>標本を無作為に抽出</h2><p class="note">1枚引くごとに戻して混ぜ直す「復元抽出」です。同じ数字が繰り返し出ることがあります。</p></div>
+  </div>
+  <div class="controls">
+    <div class="field"><label for="sizeN">標本サイズ n（1回に引く枚数）</label><input type="number" min="1" max="200" step="1" value="4" id="sizeN" inputmode="numeric"></div>
+    <div class="field"><label for="sampleM">標本数 m（実験回数）</label><input type="number" min="2" max="10000" step="1" value="30" id="sampleM" inputmode="numeric"></div>
+    <button type="button" id="runBtn" class="primary">シミュレーションする</button>
+    <button type="button" id="exportBtn" class="secondary" disabled>結果をCSVで保存</button>
+  </div>
+  <div class="action-row" style="margin:12px 0 0"><span class="small">標本サイズの例：</span><button class="setN" data-n="4">n = 4</button><button class="setN" data-n="9">n = 9</button><button class="setN" data-n="16">n = 16</button><span id="runStatus" class="note" aria-live="polite"></span></div>
+  <div id="simResults" class="afterdata hidden">
+    <div class="metrics">
+      <div class="metric"><div class="key">標本平均の平均（実験値）</div><div id="meanOfMeans" class="num">—</div><div class="detail">m個の標本平均の平均</div></div>
+      <div class="metric"><div class="key">標本平均の分散（実験値）</div><div id="varOfMeans" class="num">—</div><div class="detail">m個の偏差平方和 ÷ m</div></div>
+      <div class="metric"><div class="key">標本平均の分散（理論値）</div><div id="theoryVar" class="num">—</div><div class="detail">σ² / n（復元抽出）</div></div>
+      <div class="metric"><div class="key">標本平均の標準偏差（理論値）</div><div id="theorySd" class="num">—</div><div class="detail">σ / √n</div></div>
+    </div>
+    <div class="split afterdata">
+      <div class="visbox">
+        <div class="chart-title-row"><h3>標本平均の分布</h3><div class="chart-controls"><label for="binWidth">階級幅 <select id="binWidth"><option value="0.25">0.25</option><option value="0.5">0.5</option><option value="1" selected>1</option><option value="2">2</option></select></label></div></div>
+        <div class="chart-controls"><label><input type="checkbox" id="exactToggle" checked> 正確な理論分布</label><label><input type="checkbox" id="normalToggle" checked> 正規近似（参考）</label></div>
+        <div class="chartwrap" id="samplingChart"></div>
+        <div class="legend"><span><em></em>シミュレーション</span><span><em class="line"></em>理論分布</span><span><em class="dash"></em>正規近似</span></div>
+        <p class="small">縦軸は相対度数（確率）。理論分布は入力したカードの枚数をもとに正確に計算。正規近似は標本サイズが小さいと一致しない場合があります。</p>
+      </div>
+      <div class="visbox"><h3>標本平均を累積して平均すると？</h3><div class="chartwrap" id="cumulativeChart"></div><p class="small">横軸：標本の個数　縦軸：標本平均の累積平均。破線は母平均 μ です。抽出回数を増やしても、母平均への誤差が毎回減るわけではありません。</p></div>
+    </div>
+    <div class="hint" id="interpretation"></div>
+    <div class="tbl-scroll"><table><thead><tr><th>試行</th><th>抽出したカード（数字）</th><th>標本平均</th></tr></thead><tbody id="sampleRows"></tbody></table></div>
+    <p class="small" id="tableTail"></p>
+  </div>
+</section>
+<section class="panel" aria-labelledby="s3">
+  <div class="section-top"><div><h2 id="s3"><span class="step">3</span>標本サイズを比較する</h2><p class="note">同じ母集団で n＝4・9・16 を同じ標本数だけシミュレーションし、理論値と実験値を比較できます。</p></div><button type="button" class="secondary" id="compareBtn">n = 4・9・16 を比較</button></div>
+  <div id="compareResults" class="hidden">
+    <div class="tbl-scroll"><table><thead><tr><th>標本サイズ n</th><th>標本数 m</th><th>標本平均の平均（実験値）</th><th>分散（実験値）</th><th>分散（理論値 σ²/n）</th><th>標準偏差（理論値）</th></tr></thead><tbody id="comparisonRows"></tbody></table></div>
+    <div class="visbox" style="margin-top:15px"><h3>標本平均の理論分布の比較（復元抽出）</h3><div class="chartwrap" id="comparisonChart"></div><div class="legend"><span><em class="line" style="border-color:#287bb1"></em>n = 4</span><span><em class="line" style="border-color:#138e7c"></em>n = 9</span><span><em class="line" style="border-color:#de8b3b"></em>n = 16</span></div><p class="small">同じ母集団について、標本サイズによる確率分布の違いを比較します。いずれも連続型の正規分布ではなく、離散的な理論分布です。</p></div>
+  </div>
+</section>
+<footer>このページは単一のHTMLファイルで動作します。インターネット接続・ログイン・外部ライブラリは不要です。シミュレーションは乱数を使うため、実行するたびに結果が変わります。表示値は必要に応じて丸めています。</footer>
+</main>
+<script>
+'use strict';
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const faces=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+  const sample40=[4,4,4,2,3,3,1,3,4,4,2,3,3];
+  let counts=Array(13).fill(0);
+  let result=null;
+  let comparison=null;
+  const fmt=(v,d=4)=>Number.isFinite(v)?Number(v.toFixed(d)).toLocaleString('ja-JP',{maximumFractionDigits:d}):'—';
+  function setText(id,value){$(id).textContent=value}
+  const items=$('counts');
+  faces.forEach((face,i)=>{
+    const el=document.createElement('label');el.className='count-item';
+    el.innerHTML=`<span class="face">${face}</span><span class="rank">数字 ${i+1}</span><input type="number" min="0" max="4" step="1" value="0" inputmode="numeric" aria-label="${face}（${i+1}）の枚数" data-index="${i}">`;
+    items.append(el);
+  });
+  const countInputs=Array.from(items.querySelectorAll('input'));
+  function calculatePopulation(){
+    const N=counts.reduce((a,b)=>a+b,0);
+    const S=counts.reduce((a,f,i)=>a+f*(i+1),0);
+    const SS=counts.reduce((a,f,i)=>a+f*(i+1)*(i+1),0);
+    const mu=N?S/N:NaN;
+    const variance=N?Math.max(0,SS/N-mu*mu):NaN;
+    return {N,S,SS,mu,variance,sd:Math.sqrt(variance)};
+  }
+  function invalidate(){
+    result=null;comparison=null;
+    $('simResults').classList.add('hidden');$('compareResults').classList.add('hidden');$('exportBtn').disabled=true;
+    setText('runStatus','');
+  }
+  function renderPop(){
+    const p=calculatePopulation();
+    setText('N',p.N+' 枚');setText('mu',fmt(p.mu,5));setText('popVar',fmt(p.variance,6));setText('popSd',fmt(p.sd,5));
+    $('runBtn').disabled= p.N===0;
+    $('compareBtn').disabled=p.N===0;
+    if(p.N){
+      $('formulas').innerHTML=`<p>数字の合計：<strong>${p.S}</strong></p><p>数字の2乗の合計：<strong>${p.SS}</strong></p><p>母平均：${p.S} ÷ ${p.N} = <strong>${fmt(p.mu,6)}</strong></p><p>母分散：${p.SS} ÷ ${p.N} − (${fmt(p.mu,6)})² = <strong>${fmt(p.variance,6)}</strong></p><p class="small">ここで表示している分散は40枚等の母集団全体の分散です。分母は N を使います。</p>`;
+      $('populationChart').innerHTML=barChart(counts,{xMin:0.5,xMax:13.5,labels:faces,yLabel:'枚数',fontSize:11});
+    }else{
+      $('formulas').textContent='カードの枚数を入力すると、合計値と計算式が表示されます。';
+      $('populationChart').innerHTML='<div class="empty">枚数を入力するとグラフが表示されます。</div>';
+    }
+  }
+  function updateCounts(newCounts){
+    counts=newCounts.slice();countInputs.forEach((x,i)=>{x.value=counts[i]});invalidate();renderPop();
+  }
+  countInputs.forEach((input,i)=>input.addEventListener('input',()=>{
+    if(input.value==='') {counts[i]=0;invalidate();renderPop();return;}
+    const val=Number(input.value);
+    if(!Number.isFinite(val)){return}
+    counts[i]=Math.max(0,Math.min(4,Math.floor(val)));
+    if(val!==counts[i])input.value=counts[i];
+    invalidate();renderPop();
+  }));
+  $('exampleBtn').addEventListener('click',()=>updateCounts(sample40));
+  $('fullBtn').addEventListener('click',()=>updateCounts(Array(13).fill(4)));
+  $('clearBtn').addEventListener('click',()=>updateCounts(Array(13).fill(0)));
+  $('sizeN').addEventListener('input',invalidate);
+  $('sampleM').addEventListener('input',invalidate);
+  Array.from(document.querySelectorAll('.setN')).forEach(b=>b.addEventListener('click',()=>{$('sizeN').value=b.dataset.n;invalidate()}));
+  function getParams(){
+    const n=Number($('sizeN').value); const m=Number($('sampleM').value);
+    if(!Number.isInteger(n)||n<1||n>200){alert('標本サイズ n は1～200の整数で入力してください。');return null}
+    if(!Number.isInteger(m)||m<2||m>10000){alert('標本数 m は2～10,000の整数で入力してください。');return null}
+    if(!calculatePopulation().N){alert('カードの枚数を入力してください。');return null}
+    return {n,m};
+  }
+  function simulate(n,m){
+    const p=calculatePopulation();const cum=[];let t=0;
+    for(let i=0;i<13;i++){t+=counts[i];cum.push(t)}
+    const draws=[]; const means=[];
+    for(let j=0;j<m;j++){
+      const arr=[]; let S=0;
+      for(let k=0;k<n;k++){
+        const r=Math.random()*p.N;
+        let i=0;while(i<12&&r>=cum[i])i++;
+        const x=i+1;arr.push(x);S+=x;
+      }
+      draws.push(arr);means.push(S/n);
+    }
+    const mean=means.reduce((a,b)=>a+b,0)/m;
+    const variance=means.reduce((a,b)=>a+(b-mean)**2,0)/m;
+    return {n,m,draws,means,mean,variance,pop:p};
+  }
+  function exactPMF(n){
+    const pop=calculatePopulation();
+    let cur=new Float64Array(1);cur[0]=1;
+    for(let k=0;k<n;k++){
+      const next=new Float64Array(cur.length+13);
+      for(let s=0;s<cur.length;s++){
+        const pr=cur[s];if(pr===0)continue;
+        for(let r=1;r<=13;r++){if(counts[r-1])next[s+r]+=pr*counts[r-1]/pop.N}
+      }
+      cur=next;
+    }
+    return cur;
+  }
+  function normalCdf(x){
+    // Abramowitz-Stegun approximation, sufficient for chart display.
+    const a=Math.abs(x);const t=1/(1+0.2316419*a);
+    const z=1-Math.exp(-a*a/2)/Math.sqrt(2*Math.PI)*t*(0.319381530+t*(-0.356563782+t*(1.781477937+t*(-1.821255978+t*1.330274429))));
+    return x>=0?z:1-z;
+  }
+  function binnedDistribution(n,step,mvals=null){
+    const bins=Math.round(12/step),observed=Array(bins).fill(0),exact=Array(bins).fill(0),normal=Array(bins).fill(0);
+    function index(value){return Math.max(0,Math.min(bins-1,Math.floor((value-1)/step+1e-10)))}
+    const dist=exactPMF(n);
+    dist.forEach((prob,sum)=>{if(prob>0)exact[index(sum/n)]+=prob});
+    if(mvals)mvals.forEach(v=>observed[index(v)]++);
+    const pop=calculatePopulation();const sd=pop.sd/Math.sqrt(n);
+    for(let i=0;i<bins;i++){
+      const lo=1+i*step,hi=lo+step;
+      normal[i]=sd>0?normalCdf((hi-pop.mu)/sd)-normalCdf((lo-pop.mu)/sd):((lo<=pop.mu && (hi>pop.mu||i===bins-1))?1:0);
+    }
+    return {observed:observed.map(x=>mvals?x/mvals.length:0),exact,normal,step};
+  }
+  const svgNS='http://www.w3.org/2000/svg';
+  const escapeText=(s)=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+  function pathFor(vals,xPos,yPos){return vals.map((v,i)=>(i?'L':'M')+xPos(i).toFixed(2)+' '+yPos(v).toFixed(2)).join(' ')}
+  function barChart(values,opts={}){
+    const W=760,H=285,L=47,R=15,T=18,B=45;
+    const pw=W-L-R,ph=H-T-B,max=Math.max(1,...values)*1.1;
+    const n=values.length,bw=pw/n;
+    const lines=Array.from({length:5},(_,i)=>{const v=max*i/4,y=T+ph-i*ph/4;return `<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="#e4ecf1"/><text x="${L-9}" y="${y+4}" text-anchor="end" font-size="11" fill="#647b8b">${fmt(v,1)}</text>`}).join('');
+    const bars=values.map((v,i)=>{const height=v/max*ph,x=L+i*bw+bw*.12,y=T+ph-height;return `<rect x="${x}" y="${y}" width="${bw*.76}" height="${height}" rx="2" fill="#3b8ec0"/><text x="${x+bw*.38}" y="${T+ph+18}" text-anchor="middle" font-size="${opts.fontSize||12}" fill="#4f6476">${escapeText(opts.labels?.[i]??i)}</text>`}).join('');
+    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="母集団のカードの数字ごとの枚数を示す縦棒グラフ">${lines}${bars}<text x="14" y="14" font-size="11" fill="#647b8b">${opts.yLabel||'度数'}</text><text x="${W/2}" y="${H-5}" text-anchor="middle" font-size="12" fill="#647b8b">カードの数字</text></svg>`;
+  }
+  function samplingGraph(bdata,showExact=true,showNormal=true){
+    const W=760,H=310,L=53,R=20,T=24,B=49;const pw=W-L-R,ph=H-T-B;
+    const k=bdata.exact.length, max=Math.max(0.01,...bdata.observed,...(showExact?bdata.exact:[]),...(showNormal?bdata.normal:[]))*1.15;
+    const interval=pw/k,xmid=i=>L+interval*(i+.5),y=v=>T+ph-v/max*ph;
+    const grid=Array.from({length:5},(_,i)=>{const v=max*i/4,yy=y(v);return `<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="#e1e9ef"/><text x="${L-9}" y="${yy+4}" text-anchor="end" font-size="11" fill="#637888">${fmt(100*v,1)}%</text>`}).join('');
+    const bars=bdata.observed.map((v,i)=>{const bh=v/max*ph;return `<rect x="${L+i*interval+interval*.1}" y="${T+ph-bh}" width="${interval*.8}" height="${bh}" fill="#4d97c4" fill-opacity=".55" rx="1"/>`}).join('');
+    const exactLine=showExact?`<path d="${pathFor(bdata.exact,xmid,y)}" stroke="#138e7c" stroke-width="3" fill="none" stroke-linejoin="round"/>`:'';
+    const normalLine=showNormal?`<path d="${pathFor(bdata.normal,xmid,y)}" stroke="#8460b1" stroke-width="2.7" stroke-dasharray="8 5" fill="none" stroke-linejoin="round"/>`:'';
+    const ticks=[1,3,5,7,9,11,13].map(v=>{const tx=L+(v-1)/12*pw;return `<text x="${tx}" y="${H-24}" text-anchor="middle" font-size="11" fill="#637888">${v}</text>`}).join('');
+    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="標本平均の相対度数、正確な理論分布、および正規近似の比較グラフ">${grid}${bars}${exactLine}${normalLine}${ticks}<text x="12" y="14" font-size="11" fill="#637888">割合</text><text x="${W/2}" y="${H-5}" text-anchor="middle" font-size="12" fill="#637888">標本平均</text></svg>`;
+  }
+  function cumulativeGraph(means,mu){
+    const W=760,H=310,L=55,R=18,T=24,B=46,pw=W-L-R,ph=H-T-B;
+    let total=0;const running=means.map((v,i)=>(total+=v)/(i+1));
+    const minV=Math.min(mu,...running),maxV=Math.max(mu,...running),spread=Math.max(1.5,maxV-minV);
+    const lo=minV-spread*.12,hi=maxV+spread*.12;
+    const y=v=>T+(hi-v)/(hi-lo)*ph;
+    const x=i=>L+(means.length===1?0:i/(means.length-1)*pw);
+    const grid=Array.from({length:5},(_,i)=>{const value=lo+(hi-lo)*i/4,yy=y(value);return `<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="#e5edf2"/><text x="${L-8}" y="${yy+4}" text-anchor="end" font-size="11" fill="#647b89">${fmt(value,2)}</text>`}).join('');
+    const muLine=`<line x1="${L}" x2="${W-R}" y1="${y(mu)}" y2="${y(mu)}" stroke="#d08a3c" stroke-width="2" stroke-dasharray="7 5"/>`;
+    const xy=pathFor(running,x,y);
+    const xticks=[1,Math.max(1,Math.round(means.length*.25)),Math.max(1,Math.round(means.length*.5)),Math.max(1,Math.round(means.length*.75)),means.length];
+    const ticks=[...new Set(xticks)].map(k=>`<text x="${x(k-1)}" y="${H-23}" text-anchor="middle" font-size="11" fill="#647b89">${k}</text>`).join('');
+    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="標本平均の累積平均と母平均の比較グラフ">${grid}${muLine}<path d="${xy}" fill="none" stroke="#287bb1" stroke-width="2.4" stroke-linejoin="round"/>${ticks}<text x="10" y="13" font-size="11" fill="#637888">平均</text><text x="${W/2}" y="${H-5}" text-anchor="middle" font-size="12" fill="#637888">標本の個数</text><circle cx="${x(means.length-1)}" cy="${y(running[running.length-1])}" r="4" fill="#287bb1"/></svg>`;
+  }
+  function renderSamplePlot(){
+    if(!result)return;
+    const width=Number($('binWidth').value);
+    const binned=binnedDistribution(result.n,width,result.means);
+    $('samplingChart').innerHTML=samplingGraph(binned,$('exactToggle').checked,$('normalToggle').checked);
+  }
+  $('binWidth').addEventListener('change',renderSamplePlot);
+  $('exactToggle').addEventListener('change',renderSamplePlot);
+  $('normalToggle').addEventListener('change',renderSamplePlot);
+  function displayRun(){
+    const s=result,p=s.pop;
+    setText('meanOfMeans',fmt(s.mean,5));setText('varOfMeans',fmt(s.variance,6));
+    setText('theoryVar',fmt(p.variance/s.n,6));setText('theorySd',fmt(p.sd/Math.sqrt(s.n),5));
+    renderSamplePlot();
+    $('cumulativeChart').innerHTML=cumulativeGraph(s.means,p.mu);
+    const err=Math.abs(s.mean-p.mu);
+    $('interpretation').innerHTML=`<strong>今回の結果：</strong> ${s.m}個の標本平均の平均は <strong>${fmt(s.mean,5)}</strong>、母平均 ${fmt(p.mu,5)} との差の絶対値は <strong>${fmt(err,5)}</strong> です。標本サイズ n を大きくすると理論上の分散 σ²/n は小さくなりますが、少数回の実験では必ずしも結果が理論どおりの順序になりません。`;
+    const visible=Math.min(s.m,12);
+    $('sampleRows').innerHTML=s.draws.slice(0,visible).map((draw,i)=>`<tr><td>${i+1}</td><td style="text-align:left;white-space:normal;min-width:150px">${draw.join('、')}</td><td class="emph">${fmt(s.means[i],5)}</td></tr>`).join('');
+    setText('tableTail',s.m>visible?`画面には最初の${visible}標本のみを表示しています。すべての抽出結果はCSVで保存できます。`:'すべての抽出結果を表示しています。');
+    $('simResults').classList.remove('hidden');$('exportBtn').disabled=false;
+    setText('runStatus',`${s.n}枚ずつ、${s.m}回抽出しました。`);
+  }
+  $('runBtn').addEventListener('click',()=>{
+    const pars=getParams();if(!pars)return;
+    result=simulate(pars.n,pars.m);displayRun();
+  });
+  function saveCSV(rows,filename){
+    const csv=rows.map(row=>row.map(v=>{const s=String(v);return /[",\n]/.test(s)?'"'+s.replaceAll('"','""')+'"':s}).join(',')).join('\r\n');
+    const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download=filename;a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),3000);
+  }
+  $('exportBtn').addEventListener('click',()=>{
+    if(!result)return;
+    const s=result,header=['試行',...Array.from({length:s.n},(_,i)=>`カード${i+1}`),'標本平均'];
+    const rows=[header,...s.draws.map((draw,i)=>[i+1,...draw,s.means[i]])];
+    saveCSV(rows,`トランプ標本平均_n${s.n}_${s.m}標本.csv`);
+  });
+  function comparisonGraph(){
+    const W=760,H=300,L=55,R=18,T=20,B=45,pw=W-L-R,ph=H-T-B;
+    const groups=comparison.map((r)=>binnedDistribution(r.n,.5));
+    const max=Math.max(...groups.flatMap(g=>g.exact))*1.14;
+    const y=v=>T+ph-v/max*ph;
+    const x=i=>L+(i+.5)*pw/24;
+    const grid=Array.from({length:5},(_,i)=>{const yy=T+ph-i*ph/4;return `<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="#e2ebf1"/><text x="${L-8}" y="${yy+4}" font-size="11" text-anchor="end" fill="#627a8a">${fmt(max*i/4*100,1)}%</text>`}).join('');
+    const colors=['#287bb1','#138e7c','#de8b3b'];
+    const paths=groups.map((g,i)=>`<path d="${pathFor(g.exact,x,y)}" stroke="${colors[i]}" stroke-width="3" fill="none" stroke-linecap="round"/>`).join('');
+    const ticks=[1,3,5,7,9,11,13].map(v=>`<text x="${L+(v-1)/12*pw}" y="${H-23}" font-size="11" text-anchor="middle" fill="#647b89">${v}</text>`).join('');
+    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="標本サイズ4、9、16の標本平均の理論分布を比較するグラフ">${grid}${paths}${ticks}<text x="12" y="14" font-size="11" fill="#637888">割合</text><text x="${W/2}" y="${H-4}" text-anchor="middle" font-size="12" fill="#637888">標本平均</text></svg>`;
+  }
+  $('compareBtn').addEventListener('click',()=>{
+    const pars=getParams();if(!pars)return;
+    comparison=[4,9,16].map(n=>simulate(n,pars.m));
+    const rows=comparison.map(s=>`<tr><td class="emph">${s.n}</td><td>${s.m}</td><td>${fmt(s.mean,5)}</td><td>${fmt(s.variance,6)}</td><td>${fmt(s.pop.variance/s.n,6)}</td><td>${fmt(s.pop.sd/Math.sqrt(s.n),5)}</td></tr>`);
+    $('comparisonRows').innerHTML=rows.join('');$('comparisonChart').innerHTML=comparisonGraph();
+    $('compareResults').classList.remove('hidden');$('compareResults').scrollIntoView({behavior:'smooth',block:'nearest'});
+  });
+  renderPop();
+})();
+</script>
+</body>
+</html>
