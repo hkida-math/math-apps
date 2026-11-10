@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>麻の葉の三角形を移そう｜回転移動と対称移動</title>
+<style>
+:root{--navy:#18344f;--ink:#23364a;--muted:#596c7c;--line:#d8e3ec;--blue:#235fc9;--gold:#c48112;--teal:#067d72;--panel:#fff;--bg:#f3f7fa}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:var(--bg);color:var(--ink);font-family:"BIZ UDPGothic","Noto Sans CJK JP","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;line-height:1.65}button,input,select{font:inherit}button,select{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #70b6ed;outline-offset:2px}
+header{background:linear-gradient(110deg,#173652,#235b70);color:#fff;padding:22px max(18px,calc((100% - 1210px)/2)) 24px}header .eyebrow{font-size:.78rem;letter-spacing:.07em;font-weight:800;color:#b7e0e6;margin:0 0 3px}header h1{font-size:clamp(1.45rem,3vw,2.05rem);margin:0;line-height:1.45}header p:last-child{margin:4px 0 0;color:#e1eff5;font-size:.88rem}
+.shell{max-width:1220px;margin:auto;padding:18px 15px 40px}.tasks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:14px}.tasktab{border:1px solid #cfdde8;background:white;color:#3c5268;border-radius:12px;padding:11px 10px;min-height:71px;font-weight:750;line-height:1.45;text-align:left}.tasktab strong{display:block;font-size:.73rem;color:#73889b}.tasktab.active{background:var(--navy);border-color:var(--navy);color:#fff}.tasktab.active strong{color:#bfe4f3}.main{display:grid;grid-template-columns:minmax(0,1.16fr) minmax(350px,.84fr);gap:14px;align-items:start}.panel{background:var(--panel);border:1px solid var(--line);border-radius:15px;box-shadow:0 2px 12px #192d430c;overflow:hidden}.fig-head{padding:14px 15px 4px;display:flex;justify-content:space-between;gap:8px;align-items:center}.fig-head strong{font-size:1rem}.fig-head small{display:block;color:var(--muted);font-size:.77rem}.fig-wrap{padding:0 4px}svg{display:block;width:100%;height:auto;aspect-ratio:620 / 570;margin:auto;max-width:650px;touch-action:pan-y;user-select:none;-webkit-user-select:none}.tile{cursor:pointer;stroke:#9baebd;stroke-width:1.5;transition:fill .12s}.tile:hover,.tile:focus{stroke:#235fc9;stroke-width:3}.tile.source{fill:#dfeaff;stroke:#2b65cf;stroke-width:2.7}.tile.target{fill:#fff0c9;stroke:#d09223;stroke-width:2.7}.tile.source.target{fill:#d6e8df}.tri-name{font-family:"Noto Sans CJK JP","Arial Unicode MS",sans-serif;font-size:18px;font-weight:700;fill:#385069;stroke:white;stroke-width:4;paint-order:stroke;pointer-events:none;text-anchor:middle;dominant-baseline:middle}.tri-name.source{fill:#194fae}.tri-name.target{fill:#986006}.vertex-name{font-family:Arial,"Noto Sans CJK JP",sans-serif;font-size:18px;fill:#283d57;font-weight:800;stroke:white;stroke-width:5;stroke-linejoin:round;paint-order:stroke;text-anchor:middle;dominant-baseline:middle;pointer-events:none}.vertex-dot{fill:#415b71}.moved{fill:#3174e4;fill-opacity:.34;stroke:#1e58c5;stroke-width:3.5;stroke-linejoin:round;pointer-events:none}.ghost{fill:#976ccf;fill-opacity:.11;stroke:#7f54b6;stroke-width:2.6;stroke-dasharray:7 4;pointer-events:none}.axis-hit{stroke:transparent;stroke-width:22;cursor:move;touch-action:none}.axis-visible{stroke:#087d72;stroke-width:2.6;stroke-dasharray:8 5;pointer-events:none}.axis-handle{fill:#087d72;stroke:white;stroke-width:2.8;cursor:grab;touch-action:none}.center-dot{fill:#087d72;stroke:white;stroke-width:2.2;pointer-events:none}.legend{display:flex;flex-wrap:wrap;gap:5px 13px;padding:7px 13px 12px;border-top:1px solid #edf1f5;font-size:.78rem;color:#4f6374}.legend .key{display:inline-block;width:13px;height:13px;border-radius:3px;vertical-align:-2px;margin-right:5px;border:2px solid}.bluekey{background:#dfeaff;border-color:#2761c6!important}.goldkey{background:#fff0c9;border-color:#d09223!important}.purplekey{background:#e9def7;border-color:#8c62c6!important}
+.ctrl{padding:19px 20px}.pill{display:inline-block;font-size:.72rem;font-weight:800;letter-spacing:.03em;border-radius:24px;background:#e4eef6;color:#1f627e;padding:2px 11px}.ctrl h2{font-size:1.25rem;margin:8px 0 6px;line-height:1.5}.question{margin:0 0 11px;font-size:.9rem}.panel-section{border-top:1px solid var(--line);padding-top:13px;margin-top:13px}.label{display:block;font-size:.83rem;font-weight:800;color:#3c5163;margin-bottom:7px}.selectors{display:grid;grid-template-columns:1fr 1fr;gap:10px}.selectors label{min-width:0}.selectors select{width:100%}.controls-grid{display:flex;gap:8px;align-items:center;flex-wrap:wrap}select,input[type=number]{border:1px solid #bbcbd9;background:white;border-radius:8px;padding:7px 9px;min-height:42px;color:var(--ink)}select{min-width:110px;max-width:100%}input[type=number]{width:108px;font-variant-numeric:tabular-nums}.center-select{flex:1;min-width:160px}.btn-quiet{border:1px solid #94c6bc;background:#edf9f5;color:#076e61;border-radius:8px;min-height:41px;padding:7px 11px;font-size:.8rem;font-weight:800}.btn-quiet.active{background:#087d72;color:white}.helper{font-size:.77rem;color:var(--muted);margin:6px 0 0}.data-line{display:flex;gap:8px;align-items:baseline;justify-content:space-between}.data-line output{color:#154e9c;font-size:1.08rem;font-weight:850;font-variant-numeric:tabular-nums}.field-row{display:flex;align-items:center;gap:8px;margin:6px 0}.field-row span{font-size:.85rem}input[type=range]{width:100%;height:28px;accent-color:var(--blue);touch-action:pan-y}#offset-range{accent-color:var(--teal)}#axis-angle-range{accent-color:var(--teal)}.nudge{display:flex;gap:6px;flex-wrap:wrap}.nudge button{border:1px solid #d5e1ec;border-radius:8px;background:#f2f6fa;color:#355167;font-size:.77rem;font-weight:750;min-height:34px;padding:5px 9px}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:15px}.actions button{flex:1;min-width:92px;border:1px solid #ccdbea;background:#f3f7fb;border-radius:9px;padding:9px;font-size:.82rem;font-weight:800;min-height:43px;color:#36506a}.actions .primary{background:#245fd3;color:white;border-color:#245fd3}.actions .teal{background:#087d72;color:white;border-color:#087d72}.actions .soft{background:#eaf5f3;color:#096a61;border-color:#a5cbc6}.message{display:none;margin-top:12px;font-size:.84rem;border-radius:9px;padding:10px 11px;background:#eff4f9;border:1px solid #ccdce9;white-space:pre-line}.message.show{display:block}.message.ok{background:#e9f7f0;border-color:#9ccfbf;color:#075f51}.message.near{background:#fff7e4;border-color:#ead19d;color:#78530a}.analysis-result{display:none;background:#f3f8fc;border-left:4px solid #668da9;padding:13px;margin-top:14px;font-size:.84rem;border-radius:0 8px 8px 0}.analysis-result.show{display:block}.analysis-result p{margin:6px 0}.analysis-result strong{color:#284967}.stage{font-weight:750;color:#355e75;background:#eaf3f8;border-radius:9px;padding:7px 11px;font-size:.84rem;margin:7px 0}.teacher{margin-top:14px;padding:17px 19px}.teacher h3{margin:0 0 7px;font-size:1rem}.teacher p{margin:0;font-size:.88rem;color:#4e6577}.teacher details{margin-top:9px;border-top:1px solid var(--line);padding-top:10px}.teacher summary{cursor:pointer;font-weight:800;font-size:.87rem}.teacher details p{margin:8px 0 0}.note{font-size:.79rem;color:#617488;margin-top:6px}footer{text-align:center;color:#788799;font-size:.73rem;padding-top:17px}
+@media(max-width:900px){.main{grid-template-columns:1fr}.fig-wrap svg{max-width:620px}.ctrl{padding:17px 19px}}@media(max-width:540px){.shell{padding:10px 9px 30px}.tasks{gap:5px}.tasktab{font-size:.74rem;min-height:80px;padding:9px 7px}.tasktab strong{font-size:.69rem}.ctrl{padding:15px}.fig-wrap{padding:0}.fig-head{padding:10px 10px 2px}.fig-head strong{font-size:.88rem}.fig-head small{font-size:.68rem}.legend{font-size:.72rem;padding:7px 9px 10px;gap:2px 8px}.selectors{gap:7px}.selectors select{font-size:.85rem;min-width:0}.ctrl h2{font-size:1.13rem}.question{font-size:.85rem}.vertex-name{font-size:19px}.tri-name{font-size:19px}.actions button{min-width:85px}.stage{font-size:.8rem}}
+</style>
+</head>
+<body>
+<header><p class="eyebrow">中学校数学｜平面図形</p><h1>麻の葉の三角形を移そう</h1><p>回転移動と対称移動を操作して、どこまで重ねられるか考えよう。</p></header>
+<main class="shell">
+<nav class="tasks" aria-label="探究する問"><button class="tasktab active" data-task="0" aria-current="step"><strong>問 1</strong>回転移動1回でどこへ？</button><button class="tasktab" data-task="1"><strong>問 2</strong>対称移動1回でどこへ？</button><button class="tasktab" data-task="2"><strong>問 3</strong>2つを組み合わせると？</button></nav>
+<div class="main">
+<section class="panel" aria-label="操作する麻の葉の図"><div class="fig-head"><div><strong>三角形をタップして移動先を選ぼう</strong><small>三角形 18個（㋐〜㋡）・頂点 13個（A〜M）</small></div></div>
+<div class="fig-wrap"><svg id="diagram" viewBox="0 0 620 570" role="img" aria-label="18個の三角形と13個の頂点からなる麻の葉の図。三角形をタップして移動先を変更できます。">
+<rect x="7" y="6" width="606" height="555" rx="12" fill="#f9fbfe" stroke="#e3ebf2"/>
+<g id="tiles"></g><g id="tile-border"></g><g id="tri-labels"></g><g id="vertex-markers"></g><g id="vertex-labels"></g>
+<polygon id="first-ghost" class="ghost" points="" style="display:none"/>
+<line id="axis-hit" class="axis-hit" style="display:none"/><line id="axis-visible" class="axis-visible" style="display:none"/>
+<circle id="axis-handle" class="axis-handle" r="11" style="display:none"/>
+<polygon id="moving" class="moved" points=""/>
+<circle id="center-marker" class="center-dot" r="9" style="display:none"/>
+</svg></div>
+<div class="legend"><span><i class="key bluekey"></i>出発する三角形</span><span><i class="key goldkey"></i>移動先の三角形</span><span>青の半透明：移動中</span><span id="ghost-legend" style="display:none"><i class="key purplekey"></i>1回目の移動後</span></div></section>
+<section class="panel ctrl"><span class="pill" id="task-ref">問 1｜回転移動</span><h2 id="task-title">1回の回転で移れない場所は？</h2><p class="question" id="task-question"></p>
+<div class="panel-section" style="margin-top:0"><div class="selectors"><label><span class="label">出発する三角形</span><select id="source-select" aria-label="出発する三角形"></select></label><label><span class="label">移動先の三角形</span><select id="target-select" aria-label="移動先の三角形"></select></label></div><p class="helper">図の三角形を直接タップしても移動先を変更できます。</p></div>
+<div class="stage" id="stage-line" style="display:none">1回目：対称移動</div>
+<div class="panel-section" id="rotation-controls"><span class="label">回転移動：反時計回りを正とする</span><div class="controls-grid"><select class="center-select" id="center-select" aria-label="回転の中心"></select><button type="button" class="btn-quiet" id="center-pick" aria-pressed="false">図をタップして中心指定</button></div><p class="helper">中心は頂点A〜Mから選ぶか、図をタップして自由に指定できます。</p>
+<div class="data-line" style="margin-top:11px"><label for="angle-number" class="label" style="margin:0">回転角（反時計回り）</label><output id="angle-output">0°</output></div><div class="field-row"><input type="number" min="0" max="360" step="1" id="angle-number" value="0" inputmode="decimal" aria-label="反時計回りの回転角"><span>度（0〜360）</span></div><input type="range" min="0" max="360" step="1" id="angle-range" value="0" aria-label="回転角のスライダー"></div>
+<div class="panel-section" id="mirror-controls" style="display:none"><span class="label">対称移動：対称の軸を指定する</span><div class="data-line"><label for="axis-angle-number" class="label" style="margin:0">軸の傾き（水平から）</label><output id="axis-angle-output">0°</output></div><div class="field-row"><input id="axis-angle-number" type="number" min="0" max="180" step="1" value="0" inputmode="decimal" aria-label="対称軸の傾き"><span>度</span></div><input id="axis-angle-range" type="range" min="0" max="180" step="1" value="0" aria-label="対称軸の傾きのスライダー"><div class="data-line" style="margin-top:6px"><label for="offset-number" class="label" style="margin:0">軸の位置（平行に動かす）</label><output id="offset-output">0</output></div><div class="field-row"><input id="offset-number" type="number" min="-400" max="400" step="0.1" value="0" inputmode="decimal" aria-label="対称軸の位置"><span>−400〜400</span></div><input id="offset-range" type="range" min="-250" max="250" step="1" value="0" aria-label="対称軸の位置のスライダー"><p class="helper">緑の破線をドラッグすると軸を平行移動、丸い取っ手を動かすと傾きを変えられます。</p></div>
+<div class="actions" id="stage-actions" style="display:none"><button type="button" id="commit" class="teal">1回目を確定して回転へ</button><button type="button" id="undo-step">1回目に戻る</button></div>
+<div class="actions"><button class="primary" id="check" type="button">重なりを確認</button><button id="reset" type="button">移動をリセット</button></div><div class="actions"><button class="soft" id="example" type="button">この移動先への方法を見る</button><button id="survey" type="button">問の結果を確かめる</button></div>
+<div class="message" id="feedback" role="status" aria-live="polite"></div><div class="analysis-result" id="explanation" aria-live="polite"></div>
+</section></div>
+<section class="panel teacher"><h3>考えたことを言葉にしてみよう</h3><p>回転移動では「中心と反時計回りの角度」、対称移動では「軸の位置と傾き」を説明しましょう。2回の移動では、1回目の移動後の図形を出発点として2回目を考えます。</p><details><summary>考えるときの手掛かり</summary><p>三角形の頂点のうち、残り2つの頂点からの距離が等しい頂点に注目しましょう。これがどの方向を向いているか、移動した後はどうなるかを比べてみましょう。</p></details></section>
+<footer>オフラインで利用可能な1ファイル教材。角度の正の向きは反時計回りです。</footer>
+</main>
+<script>
+(()=>{'use strict';
+const NS='http://www.w3.org/2000/svg',R=200,s=Math.sqrt(3),K=310,Y=281;
+const V={M:[0,0],A:[0,R],B:[s*R/2,R/2],C:[s*R/2,-R/2],D:[0,-R],E:[-s*R/2,-R/2],F:[-s*R/2,R/2],G:[R/(2*s),R/2],H:[R/s,0],I:[R/(2*s),-R/2],J:[-R/(2*s),-R/2],K:[-R/s,0],L:[-R/(2*s),R/2]};
+const OUT=['A','B','C','D','E','F'],IN=['G','H','I','J','K','L'];
+const tiles=[];for(let i=0;i<6;i++){let a=OUT[i],b=OUT[(i+1)%6],m=IN[i];tiles.push([a,b,m],[b,'M',m],['M',a,m])}
+const names=tiles.map((_,i)=>String.fromCodePoint(0x32d0+i));
+const $=id=>document.getElementById(id),p2=p=>[K+p[0],Y-p[1]],ps=arr=>arr.map(p=>p2(p).map(x=>x.toFixed(3)).join(',')).join(' '), xy=t=>t.map(k=>V[k]);
+const cent=pts=>[pts.reduce((a,p)=>a+p[0],0)/3,pts.reduce((a,p)=>a+p[1],0)/3];
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1],sub=(a,b)=>[a[0]-b[0],a[1]-b[1]],add=(a,b)=>[a[0]+b[0],a[1]+b[1]],scale=(p,k)=>[p[0]*k,p[1]*k];
+const deg=a=>a*180/Math.PI,rad=a=>a*Math.PI/180,mod=a=>(a%360+360)%360;
+const fmt=x=>Number(x.toFixed(2)).toString();const normalizeAxis=a=>(a%180+180)%180;
+function apexOrient(pts){const dl=[0,1,2].map(i=>Math.hypot(...sub(pts[i],pts[(i+1)%3])));const j=dl.indexOf(Math.max(...dl));const apex=pts[(j+2)%3],base=scale(add(pts[j],pts[(j+1)%3]),.5);return mod(deg(Math.atan2(apex[1]-base[1],apex[0]-base[0])))}
+function information(pts){return {cent:cent(pts),ori:apexOrient(pts)}};
+function rot(p,a,c){const t=rad(a),u=sub(p,c),cs=Math.cos(t),sn=Math.sin(t);return add(c,[cs*u[0]-sn*u[1],sn*u[0]+cs*u[1]])}
+function ref(p,a,d){const t=rad(a),n=[-Math.sin(t),Math.cos(t)],signed=dot(n,p)-d;return sub(p,scale(n,2*signed))}
+function rotCenter(S,T,angle){const c=Math.cos(rad(angle)),s=Math.sin(rad(angle)),a=1-c,den=a*a+s*s;if(den<1e-9)return null;const dst=sub(T,[c*S[0]-s*S[1],s*S[0]+c*S[1]]);return [(a*dst[0]-s*dst[1])/den,(s*dst[0]+a*dst[1])/den]}
+function rotationSolution(source,dest){const a=information(source),b=information(dest),angle=mod(b.ori-a.ori);if(angle<1e-6||360-angle<1e-6){if(Math.hypot(...sub(a.cent,b.cent))<1e-5)return{possible:true,angle:0,center:[0,0]};return{possible:false,reason:'同じ向きの別の位置にあり、必要なのは平行移動だから'};}return {possible:true,angle,center:rotCenter(a.cent,b.cent,angle)}}
+function pointLabel(pt,tol=1e-4){for(const [key,val] of Object.entries(V)){if(Math.hypot(pt[0]-val[0],pt[1]-val[1])<tol)return key}return null}
+function namedRotationSolution(source,dest){const exact=rotationSolution(source,dest);if(!exact.possible)return exact;const a=information(source),b=information(dest),ang=exact.angle;for(const key of Object.keys(V)){const c=V[key];const moved=a.cent;const rc=rot(moved,ang,c);if(Math.hypot(rc[0]-b.cent[0],rc[1]-b.cent[1])<1e-5)return {possible:true,angle:ang,center:c,label:key,named:true}}const lbl=pointLabel(exact.center);return {...exact,label:lbl,named:!!lbl}}
+function reflectionAxisLabel(theta,d){const t=rad(theta),u=[Math.cos(t),Math.sin(t)],n=[-u[1],u[0]];const pts=[];for(const [key,val] of Object.entries(V)){if(Math.abs(dot(val,n)-d)<1e-5)pts.push(key)}if(pts.length>=2)return '頂点'+pts[0]+'と頂点'+pts[1]+'を通る直線';if(pts.length===1)return '頂点'+pts[0]+'を通る直線';return 'ある直線';}
+function reflectionSolution(source,dest){const a=information(source),b=information(dest),theta=normalizeAxis((a.ori+b.ori)/2),u=[Math.cos(rad(theta)),Math.sin(rad(theta))],n=[-u[1],u[0]],delta=sub(b.cent,a.cent);if(Math.abs(dot(delta,u))>1e-5)return{possible:false};return{possible:true,theta,d:dot(scale(add(a.cent,b.cent),.5),n)}}
+function combinedSolution(source,dest){const a=information(source),b=information(dest);let theta=90,other=mod(2*theta-a.ori),angle=mod(b.ori-other);if(angle<1e-5){theta=0;other=mod(2*theta-a.ori);angle=mod(b.ori-other)}if(angle<1e-5){theta=45;other=mod(2*theta-a.ori);angle=mod(b.ori-other)}const n=[-Math.sin(rad(theta)),Math.cos(rad(theta))],d=dot(a.cent,n);return{theta,d,angle,center:rotCenter(a.cent,b.cent,angle)}}
+function distShape(a,b){let m=0;for(const p of a){let smallest=Math.min(...b.map(q=>Math.hypot(...sub(p,q))));m=Math.max(m,smallest)}for(const p of b){let smallest=Math.min(...a.map(q=>Math.hypot(...sub(p,q))));m=Math.max(m,smallest)}return m}
+function mk(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const[k,v]of Object.entries(attrs))e.setAttribute(k,String(v));parent.appendChild(e);return e}
+let task=0,src=0,dst=6,step=0,angle=0,axisAngle=90,offset=0,centerId='M',custom=[0,0],picking=false,first=null,dragging=null;
+const srcPoints=()=>xy(tiles[src]),dstPoints=()=>xy(tiles[dst]);const center=()=>centerId==='custom'?custom:V[centerId];const opMode=()=>task===0?'rotate':task===1?'reflect':step===0?'reflect':'rotate';
+function firstPts(){return first?srcPoints().map(p=>ref(p,first.theta,first.d)):srcPoints()}
+function resultPts(){const pts=task===2&&step===1?firstPts():srcPoints();return pts.map(p=>opMode()==='rotate'?rot(p,angle,center()):ref(p,axisAngle,offset))}
+const baseTiles=$('tiles'),triangleNames=$('tri-labels'),vertexMarks=$('vertex-markers'),vertexLabels=$('vertex-labels');
+for(let i=0;i<tiles.length;i++){
+ const pts=xy(tiles[i]);const poly=mk('polygon',{points:ps(pts),fill:'#fff',class:'tile',role:'button',tabindex:'0','aria-label':'三角形'+names[i]+'を移動先に選択する'},baseTiles);
+ poly.addEventListener('click',()=>{if(!picking)selectDest(i)});
+ poly.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();if(!picking)selectDest(i)}});
+ const mid=cent(pts),t=mk('text',{x:p2(mid)[0],y:p2(mid)[1],class:'tri-name','data-triangle':String(i)},triangleNames);t.textContent=names[i];
+}
+for(const key of 'ABCDEFGHIJKLM'){
+ const p=V[key];const v=mk('circle',{cx:p2(p)[0],cy:p2(p)[1],r:key==='M'?4.7:3.7,class:'vertex-dot'},vertexMarks);
+ let location;
+ if(key==='M'){location=[14,-14]}else if('ABCDEF'.includes(key)) {const length=Math.hypot(...p);location=scale(p,1+29/length)}else {const length=Math.hypot(...p);location=scale(p,1-22/length)}
+ const l=mk('text',{x:p2(location)[0],y:p2(location)[1],class:'vertex-name'},vertexLabels);l.textContent=key;
+}
+for(const [key,n] of Object.entries(V)){let b=document.createElement('option');b.value=key;b.textContent='頂点 '+key+(key==='M'?'（中央）':'');$('center-select').appendChild(b)}
+let customOpt=document.createElement('option');customOpt.value='custom';customOpt.textContent='自由に指定';$('center-select').appendChild(customOpt);
+for(let i=0;i<18;i++){for(const sel of [$('source-select'),$('target-select')]){let opt=document.createElement('option');opt.value=i;opt.textContent=names[i]+'（三角形）';sel.appendChild(opt)}}
+function message(t,kind='show'){const e=$('feedback');e.textContent=t;e.className='message show'+(kind==='ok'?' ok':kind==='near'?' near':'')}
+function clear(){ $('feedback').className='message';$('feedback').textContent='';$('explanation').className='analysis-result';$('explanation').textContent=''}
+function explain(html){$('explanation').innerHTML=html;$('explanation').className='analysis-result show'}
+function syncControls(){
+ $('center-select').value=centerId;$('center-pick').classList.toggle('active',picking);$('center-pick').setAttribute('aria-pressed',String(picking));$('center-pick').textContent=picking?'中心をタップしてください':'図をタップして中心指定';
+ $('angle-range').value=angle;$('angle-output').textContent=fmt(angle)+'°';if(document.activeElement!==$('angle-number'))$('angle-number').value=fmt(angle);
+ $('axis-angle-range').value=axisAngle;$('axis-angle-output').textContent=fmt(axisAngle)+'°';if(document.activeElement!==$('axis-angle-number'))$('axis-angle-number').value=fmt(axisAngle);
+ $('offset-range').value=offset;$('offset-output').textContent=fmt(offset);if(document.activeElement!==$('offset-number'))$('offset-number').value=fmt(offset);
+ $('rotation-controls').style.display=opMode()==='rotate'?'':'none';$('mirror-controls').style.display=opMode()==='reflect'?'':'none';$('stage-actions').style.display=task===2?'flex':'none';
+ $('stage-line').style.display=task===2?'':'none';$('stage-line').textContent=step===0?'1回目：対称移動の軸を設定する':'2回目：1回目の図形を反時計回りに回転する';$('commit').disabled=step!==0;$('undo-step').disabled=step!==1;
+ $('ghost-legend').style.display=task===2&&step===1?'':'none';
+ $('source-select').value=src;$('target-select').value=dst;
+ }
+function draw(){
+ document.querySelectorAll('.tile').forEach((e,i)=>e.setAttribute('class','tile'+(i===src?' source':'')+(i===dst?' target':'')));
+ document.querySelectorAll('.tri-name').forEach((e,i)=>e.setAttribute('class','tri-name'+(i===src?' source':'')+(i===dst?' target':'')));
+ $('moving').setAttribute('points',ps(resultPts()));
+ $('first-ghost').style.display=task===2&&step===1?'':'none';if(task===2&&step===1)$('first-ghost').setAttribute('points',ps(firstPts()));
+ const on=opMode()==='reflect';for(const id of ['axis-hit','axis-visible','axis-handle'])$(id).style.display=on?'':'none';
+ if(on){const theta=rad(axisAngle),u=[Math.cos(theta),Math.sin(theta)],n=[-u[1],u[0]],base=scale(n,offset),a=add(base,scale(u,-370)),b=add(base,scale(u,370));
+ for(const id of ['axis-hit','axis-visible']){const e=$(id),aa=p2(a),bb=p2(b);e.setAttribute('x1',aa[0]);e.setAttribute('y1',aa[1]);e.setAttribute('x2',bb[0]);e.setAttribute('y2',bb[1]);}
+ const hd=p2(add(base,scale(u,170)));$('axis-handle').setAttribute('cx',hd[0]);$('axis-handle').setAttribute('cy',hd[1]);}
+ $('center-marker').style.display=opMode()==='rotate'?'':'none';if(opMode()==='rotate'){$('center-marker').setAttribute('cx',p2(center())[0]);$('center-marker').setAttribute('cy',p2(center())[1]);}
+ syncControls();
+}
+function selectDest(i){dst=Number(i);resetOp();draw();clear()}
+function selectSrc(i){src=Number(i);dst=(src+1)%18;resetOp();draw();clear()}
+function resetOp(){step=0;first=null;angle=0;axisAngle=90;offset=0;centerId='M';custom=[0,0];picking=false}
+const prompts=[
+ ['問 1｜回転移動','1回の回転で移れない場所は？','出発の三角形を、反時計回りの回転移動1回だけで重ねられない三角形はあるだろうか。移動先と回転の中心・角度を変えて調べよう。'],
+ ['問 2｜対称移動','1回の対称移動でどこへ？','出発の三角形から、対称移動1回だけで重ねられる三角形はどれだろうか。対称の軸の傾きと位置を変えて確かめよう。'],
+ ['問 3｜移動の組合せ','2つを組み合わせると？','回転移動1回では重ねられない三角形も、対称移動1回と回転移動1回を順番に行えば重ねられるだろうか。']
+];
+function chooseTask(n){task=n;src=0;dst=[6,15,8][n];resetOp();document.querySelectorAll('.tasktab').forEach((b,i)=>{b.classList.toggle('active',i===n);if(i===n)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current')});$('task-ref').textContent=prompts[n][0];$('task-title').textContent=prompts[n][1];$('task-question').textContent=prompts[n][2];clear();draw()}
+function check(){const d=distShape(resultPts(),dstPoints());if(d<5){message('ぴったり重なりました。どこを中心に何度回したか、またはどこを対称の軸にしたか、説明してみましょう。','ok')}
+ else if(d<18){message('かなり近づきました。中心・角度や対称の軸の位置を調整してみましょう。','near')}
+ else message('まだ重なっていません。対応する頂点と三角形の向きに注目してみましょう。')}
+function commit(){if(task!==2||step!==0)return;first={theta:axisAngle,d:offset};step=1;angle=0;centerId='M';custom=[0,0];picking=false;clear();draw();message('1回目の対称移動を確定しました。続けて回転移動の中心と角度を選びましょう。')}
+function undo(){if(task!==2||step!==1)return;step=0;axisAngle=first.theta;offset=first.d;first=null;clear();draw()}
+function showExample(){const source=srcPoints(),dest=dstPoints(),label=names[dst],origin=names[src];if(task===0){const sol=namedRotationSolution(source,dest);if(!sol.possible){explain('<strong>1回の回転移動では重ねられません。</strong><p>'+origin+'と'+label+'は、二等辺三角形の頂角の向きが同じで、位置だけが異なります。同じ向きにする回転角は0°（または360°）なので、異なる位置に移せません。</p>');return}centerId=sol.named?sol.label:'custom';custom=sol.center;angle=sol.angle;picking=false;draw();const ctext=sol.named?('中心を'+sol.label+'とし'):'図をタップして決めた点を中心とし';explain('<strong>回転移動の例</strong><p>'+ctext+'、反時計回りに'+fmt(sol.angle)+'°回すと重なります。</p>');check();return}if(task===1){const sol=reflectionSolution(source,dest);if(!sol.possible){explain('<strong>1回の対称移動では重ねられません。</strong><p>三角形の頂角の向きを合わせる対称の軸が、両三角形の位置関係と一致しないためです。</p>');return}axisAngle=sol.theta;offset=sol.d;draw();const axisText=reflectionAxisLabel(sol.theta,sol.d);explain('<strong>対称移動の例</strong><p>'+axisText+'を対称の軸にすると重なります。</p><p>この軸は、水平から'+fmt(sol.theta)+'°傾いています。</p>');check();return}const sol=combinedSolution(source,dest);step=1;first={theta:sol.theta,d:sol.d};axisAngle=sol.theta;offset=sol.d;angle=sol.angle;centerId=pointLabel(sol.center)?pointLabel(sol.center):'custom';custom=sol.center;picking=false;draw();const axisText=reflectionAxisLabel(sol.theta,sol.d);const rotCenterText=pointLabel(sol.center)?('中心を'+pointLabel(sol.center)+'とし'):'図をタップして決めた点を中心とし';explain('<strong>2回の移動の一例</strong><p>① '+axisText+'を対称の軸にして対称移動する。<br>② その図形を、'+rotCenterText+'、反時計回りに'+fmt(sol.angle)+'°回転する。</p><p>紫の破線が1回目の移動後、青が2回目の移動後です。</p>');check();return}
+function showSurvey(){const source=srcPoints(),rotNo=[],refYes=[],refNo=[];
+ for(let i=0;i<tiles.length;i++){if(i===src)continue;const d=xy(tiles[i]);if(!rotationSolution(source,d).possible)rotNo.push(names[i]);if(reflectionSolution(source,d).possible)refYes.push(names[i]);else refNo.push(names[i]);}
+ if(task===0)explain('<strong>回転移動1回で重ねられない三角形</strong><p>'+rotNo.join('・')+'（'+rotNo.length+'個）</p><p>これらは出発の三角形と頂角が同じ方向を向き、異なる位置にあります。反時計回り0°（360°）の回転では位置を変えられません。</p><p>それ以外の'+(17-rotNo.length)+'個は、中心を適切に選べば回転移動1回で重ねられます。</p>');
+ else if(task===1)explain('<strong>対称移動1回で重ねられる三角形</strong><p>'+refYes.join('・')+'（'+refYes.length+'個）</p><p>1回では重ねられない三角形：'+refNo.join('・')+'（'+refNo.length+'個）。出発の三角形自体は数えていません。</p>');
+ else explain('<strong>組み合わせるとどうなるか</strong><p>回転移動1回では重ねられない三角形：'+rotNo.join('・')+'。</p><p>これらも「1回の対称移動 → 1回の回転移動」で重ねられます。「この移動先への方法を見る」で具体的な移動を確認しましょう。</p>');}
+function screenPoint(e){const svg=$('diagram'),p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const c=svg.getScreenCTM();if(!c)return null;const q=p.matrixTransform(c.inverse());return[q.x-K,Y-q.y]}
+function pickCenter(e){if(!picking||opMode()!=='rotate')return;const p=screenPoint(e);if(!p)return;centerId='custom';custom=p;picking=false;clear();draw();e.preventDefault()}
+$('diagram').addEventListener('click',e=>{if(picking){pickCenter(e);e.stopPropagation();e.preventDefault()}},true);
+function beginAxisDrag(e,kind){if(opMode()!=='reflect')return;dragging={id:e.pointerId,kind,anchor:scale([-Math.sin(rad(axisAngle)),Math.cos(rad(axisAngle))],offset)};e.currentTarget.setPointerCapture(e.pointerId);e.preventDefault()}
+function axisMove(e){if(!dragging||dragging.id!==e.pointerId)return;const p=screenPoint(e);if(!p)return;if(dragging.kind==='tilt'){const anchor=dragging.anchor,theta=mod(deg(Math.atan2(p[1]-anchor[1],p[0]-anchor[0])));axisAngle=normalizeAxis(theta);offset=dot(anchor,[-Math.sin(rad(axisAngle)),Math.cos(rad(axisAngle))])}else{const n=[-Math.sin(rad(axisAngle)),Math.cos(rad(axisAngle))];offset=Math.max(-400,Math.min(400,dot(p,n)))}clear();draw();e.preventDefault()}
+for(const [id,kind] of [['axis-hit','offset'],['axis-handle','tilt']]){const el=$(id);el.addEventListener('pointerdown',e=>beginAxisDrag(e,kind));el.addEventListener('pointermove',axisMove);el.addEventListener('pointerup',()=>dragging=null);el.addEventListener('pointercancel',()=>dragging=null)}
+$('center-select').addEventListener('change',e=>{centerId=e.target.value;picking=false;clear();draw()});$('center-pick').addEventListener('click',()=>{picking=!picking;draw()});
+for(const [id,variable,lo,hi] of [['angle-number','angle',0,360],['angle-range','angle',0,360],['axis-angle-number','axisAngle',0,180],['axis-angle-range','axisAngle',0,180],['offset-number','offset',-400,400],['offset-range','offset',-400,400]]){
+ $(id).addEventListener('input',e=>{if(e.target.value.trim()==='')return;const v=Number(e.target.value);if(!Number.isFinite(v)||v<lo||v>hi)return;if(variable==='angle')angle=v;else if(variable==='axisAngle')axisAngle=v;else offset=v;clear();draw()});
+ $(id).addEventListener('change',e=>{const v=Number(e.target.value);if(!Number.isFinite(v))return;const val=Math.min(hi,Math.max(lo,v));if(variable==='angle')angle=val;else if(variable==='axisAngle')axisAngle=val;else offset=val;clear();draw()});}
+$('source-select').addEventListener('change',e=>selectSrc(e.target.value));$('target-select').addEventListener('change',e=>selectDest(e.target.value));
+document.querySelectorAll('[data-task]').forEach(b=>b.addEventListener('click',()=>chooseTask(+b.dataset.task)));
+$('check').addEventListener('click',check);$('reset').addEventListener('click',()=>{resetOp();clear();draw()});$('commit').addEventListener('click',commit);$('undo-step').addEventListener('click',undo);$('example').addEventListener('click',showExample);$('survey').addEventListener('click',showSurvey);
+chooseTask(0);
+window.__mathLab={get:()=>({task,src,dst,step,angle,axisAngle,offset,centerId,custom,first}),setTarget:selectDest,setSource:selectSrc,chooseTask,check,showExample,showSurvey,rotationSolution:(a,b)=>rotationSolution(xy(tiles[a]),xy(tiles[b])),reflectionSolution:(a,b)=>reflectionSolution(xy(tiles[a]),xy(tiles[b])),combinedSolution:(a,b)=>combinedSolution(xy(tiles[a]),xy(tiles[b])),difference:()=>distShape(resultPts(),dstPoints())};
+})();
+</script>
+</body>
+</html>
