@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>正六角形から麻の葉模様へ｜アニメーション教材</title>
+<style>
+:root{--navy:#193c59;--text:#22394d;--sub:#556c7c;--line:#d6e4ed;--accent:#145dab;--teal:#078078;--background:#f4f8fb;}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;}
+body{font-family:"BIZ UDPGothic","Noto Sans JP","Hiragino Kaku Gothic ProN",Meiryo,sans-serif; margin:0; background:var(--background); color:var(--text); line-height:1.6;}
+header{background:#183b58; color:white; padding:19px max(20px,calc((100% - 1040px)/2)) 20px;}
+header .eyebrow{margin:0 0 1px; color:#b8dce9; font-size:.85rem; font-weight:700;letter-spacing:.05em}
+h1{margin:0; font-weight:800; font-size:clamp(1.45rem,3vw,2rem); line-height:1.5}
+header p:last-child{margin:2px 0 0; color:#e6f0f6; font-size:.93rem}
+main{max-width:1080px; margin:0 auto; padding:22px 16px 32px}
+.surface{background:white; border:1px solid var(--line); box-shadow:0 4px 22px #1a3a5310; border-radius:16px; padding:20px;}
+.build-body{display:grid; grid-template-columns:minmax(0,1.75fr) minmax(240px,.8fr); gap:23px; align-items:center;}
+.build-figure{min-width:0; border:1px solid #e3eaf2; background:#fafcff; border-radius:12px; overflow:hidden}
+svg{display:block; width:100%; height:auto; aspect-ratio:620 / 485; max-width:750px; margin:0 auto;}
+.build-outer{fill:none; stroke:#284f71; stroke-width:4.5; stroke-linejoin:round}
+.build-radial{stroke:#477cac; stroke-width:3.4; stroke-linecap:round}
+.build-inset{stroke:#00847d; stroke-width:3.1; stroke-linecap:round}
+.build-vertex{font-family:Arial,sans-serif; font-size:19px; fill:#29435a; font-weight:700; text-anchor:middle}
+.side-title{font-size:1.06rem; font-weight:800; margin:0 0 7px; color:#193d5b}
+.side-help{margin:0 0 14px; font-size:.93rem; color:var(--sub)}
+.build-steps{padding:0;margin:0 0 19px; list-style:none;counter-reset:step;}
+.build-steps li{counter-increment:step;display:flex;gap:9px;align-items:flex-start;margin:8px 0;font-size:.9rem;}
+.build-steps li::before{content:counter(step); display:inline-grid; place-items:center; flex:0 0 24px; width:24px; height:24px; border-radius:50%; background:#e7f0f8; color:#23618a; font-size:.8rem; font-weight:800}
+.build-actions{display:flex; gap:9px; flex-wrap:wrap;}
+.build-actions button{flex:1; min-width:86px; min-height:45px; padding:8px 11px; border-radius:9px; font:inherit; font-weight:800; font-size:.9rem; border:1px solid #c3d6e3; background:#f3f7fb; color:#274a67; cursor:pointer;}
+.build-actions .play{background:#245fc4; border-color:#245fc4; color:white}
+.build-actions button:disabled{opacity:.46;cursor:not-allowed}
+button:focus-visible{outline:3px solid #79bcea; outline-offset:2px}
+.speed-controls{margin-top:14px;padding:12px 13px;border:1px solid #d8e5ef;border-radius:10px;background:#f7fafc}
+.speed-controls label{display:flex;justify-content:space-between;gap:8px;font-weight:750;font-size:.9rem}
+.speed-controls output{color:#145dab;font-variant-numeric:tabular-nums}
+.speed-controls input{display:block;width:100%;margin:11px 0 4px;accent-color:#145dab;cursor:pointer}
+.speed-controls .marks{display:flex;justify-content:space-between;color:#556c7c;font-size:.78rem}
+.build-status{margin-top:14px;min-height:32px;color:#1f5e76;font-weight:800;font-size:.92rem}
+.build-progress{display:block;width:100%;height:12px;accent-color:var(--teal);margin-top:7px;}
+.note{font-size:.83rem; color:var(--sub); margin:15px 0 0;}
+@media(max-width:760px){main{padding:12px 9px 24px}.surface{padding:12px}.build-body{grid-template-columns:1fr;gap:14px}.build-side{padding:2px 5px}.build-steps{margin-bottom:12px}.build-actions button{min-width:76px}.side-help{margin-bottom:9px}header{padding:14px 16px 16px}}
+</style>
+</head>
+<body>
+<header>
+<p class="eyebrow">中学校数学｜平面図形</p>
+<h1>正六角形から麻の葉模様へ</h1>
+<p>線が加わる様子を観察し、模様のつくり方を考えよう。</p>
+</header>
+<main>
+<section class="surface" aria-label="麻の葉模様の作図アニメーション">
+<div class="build-body">
+<div class="build-figure">
+<svg id="build-svg" viewBox="0 0 620 485" role="img" aria-label="正六角形に線が順に加わり、18個の三角形からなる麻の葉模様ができるアニメーション">
+<g id="build-base"></g><g id="build-lines"></g><g id="build-labels"></g>
+</svg>
+</div>
+<div class="build-side">
+<h2 class="side-title">模様ができるまで</h2>
+<p class="side-help">どの点どうしを結んでいるか、順序に注目しよう。</p>
+<ol class="build-steps"><li>正六角形を用意する</li><li>中心と6つの頂点を結ぶ</li><li>6つの三角形を、それぞれ3つに分ける</li></ol>
+<div class="build-actions">
+<button type="button" id="build-start" class="play">スタート</button>
+<button type="button" id="build-stop" disabled>ストップ</button>
+<button type="button" id="build-reset">最初から</button>
+</div>
+<div class="speed-controls"><label for="build-speed">再生速度 <output id="build-speed-value" for="build-speed">1.0倍（標準）</output></label><input type="range" id="build-speed" min="0.25" max="3" step="0.25" value="1" aria-label="アニメーションの再生速度"><div class="marks"><span>ゆっくり 0.25倍</span><span>速く 3.0倍</span></div></div>
+<div id="build-status" class="build-status" role="status" aria-live="polite">正六角形から始めます</div>
+<progress id="build-progress" class="build-progress" max="100" value="0" aria-label="アニメーションの進行状況"></progress>
+</div>
+</div>
+</section>
+<p class="note">「ストップ」で一時停止し、「スタート」で続きから再開できます。再生速度は0.25〜3.0倍に調節できます。「最初から」で正六角形の状態に戻ります。インターネット接続は不要です。</p>
+</main>
+<script>
+// A separate, controllable animation. The original exercise remains unchanged.
+(()=>{'use strict';
+const SVG='http://www.w3.org/2000/svg';
+const el=id=>document.getElementById(id), base=el('build-base'), lines=el('build-lines'), labels=el('build-labels');
+const k=310,y=241,R=187,s=Math.sqrt(3), W={M:[0,0],A:[0,R],B:[s*R/2,R/2],C:[s*R/2,-R/2],D:[0,-R],E:[-s*R/2,-R/2],F:[-s*R/2,R/2],G:[R/(2*s),R/2],H:[R/s,0],I:[R/(2*s),-R/2],J:[-R/(2*s),-R/2],K:[-R/s,0],L:[-R/(2*s),R/2]};
+const outer=['A','B','C','D','E','F'],inside=['G','H','I','J','K','L'],pos=a=>[k+a[0],y-a[1]];
+const make=(tag,attrs,parent)=>{const e=document.createElementNS(SVG,tag);for(const [key,val]of Object.entries(attrs))e.setAttribute(key,String(val));parent.appendChild(e);return e;};
+make('polygon',{points:outer.map(a=>pos(W[a]).join(',')).join(' '),class:'build-outer'},base);
+for(const c of outer){const p=pos(W[c]),unit=W[c],f=1+27/Math.hypot(...unit);make('text',{x:k+unit[0]*f,y:y-unit[1]*f+7,class:'build-vertex'},labels).textContent=c;}
+const segments=[];
+for(const vertex of outer)segments.push(['M',vertex,'build-radial']);
+for(let i=0;i<6;i++){const m=inside[i];for(const v of ['M',outer[i],outer[(i+1)%6]])segments.push([m,v,'build-inset']);}
+const strokes=segments.map(([from,to,cls])=>make('line',{x1:pos(W[from])[0],y1:pos(W[from])[1],x2:pos(W[from])[0],y2:pos(W[from])[1],class:cls},lines));
+const duration=7500;let playTime=0,lastTime=null,playing=false,raf=0,speed=1;
+function setSpeed(value){speed=Number(value);el('build-speed-value').textContent=speed.toFixed(2).replace(/0$/,'').replace(/\.$/,'')+'倍'+(speed===1?'（標準）':'');el('build-speed').setAttribute('aria-valuetext',speed+'倍速');}
+function paint(){const point=playTime/duration*segments.length;
+  segments.forEach(([from,to],i)=>{const f=Math.max(0,Math.min(1,point-i)),a=pos(W[from]),b=pos(W[to]);strokes[i].style.display=f<=0?'none':'';strokes[i].setAttribute('x2',a[0]+(b[0]-a[0])*f);strokes[i].setAttribute('y2',a[1]+(b[1]-a[1])*f);});
+  el('build-progress').value=100*playTime/duration;
+  const status=el('build-status');
+  status.textContent=playTime>=duration?'完成：18個の三角形':playTime===0?'正六角形から始めます':point<6?'中心と頂点を結んでいます':'各三角形を3つに分けています';
+  el('build-start').disabled=playing;
+  el('build-stop').disabled=!playing;
+}
+function tick(now){if(!playing)return;if(lastTime!==null)playTime=Math.min(duration,playTime+Math.max(0,now-lastTime)*speed);lastTime=now;paint();
+  if(playTime>=duration){playing=false;lastTime=null;paint();return;}raf=requestAnimationFrame(tick);
+}
+function start(){if(playing)return;if(playTime>=duration)playTime=0;playing=true;lastTime=null;paint();raf=requestAnimationFrame(tick);}
+function stop(){if(!playing)return;playing=false;lastTime=null;cancelAnimationFrame(raf);paint();}
+function reset(){stop();playTime=0;paint();}
+el('build-speed').addEventListener('input',e=>setSpeed(e.target.value));setSpeed(1);
+el('build-start').addEventListener('click',start);el('build-stop').addEventListener('click',stop);el('build-reset').addEventListener('click',reset);
+paint();window.__buildAnimation={start,stop,reset,get:()=>({playing,progress:playTime/duration,completed:playTime>=duration,speed,visibleLines:strokes.filter(s=>Math.abs(Number(s.getAttribute('x1'))-Number(s.getAttribute('x2')))+Math.abs(Number(s.getAttribute('y1'))-Number(s.getAttribute('y2')))>0.01).length})};
+})();
+</script>
+</body>
+</html>
